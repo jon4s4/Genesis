@@ -412,7 +412,7 @@ class Go2Env:
     # -------------------------------------------------------------------------
 
     def increase_x_target(self, delta):
-        mask = self.commands[:, 0] < 5.0
+        mask = self.commands[:, 0] < 15.0
         self.commands[mask, 0] += delta
         print(f"Increased x target velocity by {delta:.2f} m/s")
 
@@ -421,7 +421,7 @@ class Go2Env:
         cfg       = self.env_cfg.get("curriculum_config", {})
         threshold = cfg.get("threshold",  0.8)
         increment = cfg.get("increment",  0.2)
-        final_max = cfg.get("final_vel_range", [0.0, 5.0])[1]
+        final_max = cfg.get("final_vel_range", [0.0, 10.0])[1]
         if mean_tracking_reward > threshold:
             self.lin_vel_x_range[1] = min(self.lin_vel_x_range[1] + increment, final_max)
             print(f"Curriculum update → max forward vel = {self.lin_vel_x_range[1]:.2f} m/s")
