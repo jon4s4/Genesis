@@ -315,83 +315,6 @@ class Go2Env:
             self.episode_sums[name] += rew
 
     # -------------------------------------------------------------------------
-    # Reward primitives  (override in WalkRandomTerrain if needed)
-    # -------------------------------------------------------------------------
-
-    def _reward_tracking_lin_vel_x(self):
-        error = torch.square(self.commands[:, 0] - self.base_lin_vel[:, 0])
-        return torch.exp(-error / self.reward_cfg["tracking_sigma"])
-
-    def _reward_tracking_lin_vel_y(self):
-        error = torch.square(self.commands[:, 1] - self.base_lin_vel[:, 1])
-        return torch.exp(-error / self.reward_cfg["tracking_sigma"])
-
-    def _reward_tracking_ang_vel(self):
-        error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
-        return torch.exp(-error / self.reward_cfg["tracking_sigma"])
-
-    def _reward_lin_vel_z(self):
-        """Penalise vertical bouncing."""
-        return torch.square(self.base_lin_vel[:, 2])
-
-    def _reward_ang_vel_xy(self):
-        """Penalise roll and pitch angular velocity."""
-        return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
-
-    def _reward_orientation(self):
-        """Penalise tilted base via gravity projection onto x/y."""
-        return torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
-
-    def _reward_torques(self):
-        """Penalise large joint torques (energy efficiency)."""
-        return torch.sum(torch.square(self.torques), dim=1)
-
-    def _reward_action_rate(self):
-        """Penalise abrupt action changes (1st-order)."""
-        return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
-
-    def _reward_smoothness(self):
-        """Penalise jerk — 2nd-order action differences."""
-        return torch.sum(
-            torch.square(self.actions - 2.0 * self.last_actions + self.last_last_actions), dim=1
-        )
-
-    def _reward_feet_air_time(self):
-        """Reward appropriate foot air-time for dynamic trotting / galloping."""
-        contact = self.feet_contact                          # (num_envs, 4)  bool
-        first_contact = (self.feet_air_time > 0) & contact
-        self.feet_air_time += self.dt
-
-        # Target scales with commanded forward speed
-        target_air_time = 0.18 + 0.18 * torch.abs(self.commands[:, 0]).unsqueeze(1)
-
-        reward = torch.sum(
-            (self.feet_air_time - target_air_time).clip(max=0.0) * first_contact.float(),
-            dim=1,
-        )
-        self.feet_air_time *= (~contact).float()             # reset counter on touch-down
-        return reward
-    
-    def _reward_penalized_contact(self):
-        """Penalise contact on thigh and calf links."""
-        penalized_forces = self.link_contact_forces[:, self.penalized_contact_link_indices, :]
-        return torch.sum(
-            (torch.norm(penalized_forces, dim=-1) > 0.1).float(), dim=1
-    )
-
-    def _reward_feet_slip(self):
-        """Penalise lateral foot velocity while foot is in contact (slipping)."""
-        contact = self.feet_contact.float() # (num_envs, 4)
-        feet_xy_speed = torch.norm(self.foot_velocities[:, :, :2], dim=-1)  # (num_envs, 4)
-        return torch.sum(feet_xy_speed * contact, dim=1)
-
-
-    def _reward_alive(self):
-        """Belohne jeden Schritt, in dem der Roboter nicht terminiert."""
-        return (~self.reset_buf.bool()).float()
-
-
-    # -------------------------------------------------------------------------
     # Observations
     # -------------------------------------------------------------------------
 
@@ -488,7 +411,7 @@ class Go2Env:
     # -------------------------------------------------------------------------
 
     def increase_x_target(self, delta):
-        mask = self.commands[:, 0] < 2.5
+        mask = self.commands[:, 0] < 5.0
         self.commands[mask, 0] += delta
         print(f"Increased x target velocity by {delta:.2f} m/s")
 
@@ -497,7 +420,7 @@ class Go2Env:
         cfg       = self.env_cfg.get("curriculum_config", {})
         threshold = cfg.get("threshold",  0.8)
         increment = cfg.get("increment",  0.2)
-        final_max = cfg.get("final_vel_range", [0.0, 3.5])[1]
+        final_max = cfg.get("final_vel_range", [0.0, 5.0])[1]
         if mean_tracking_reward > threshold:
             self.lin_vel_x_range[1] = min(self.lin_vel_x_range[1] + increment, final_max)
             print(f"Curriculum update → max forward vel = {self.lin_vel_x_range[1]:.2f} m/s")

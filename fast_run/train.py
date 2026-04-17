@@ -1,11 +1,12 @@
 import argparse
 import json
 import os
+os.environ['HSA_OVERRIDE_GFX_VERSION'] = '10.3.0'
 import pickle
 import shutil
 
 import genesis as gs
-gs.init(backend=gs.gpu)
+gs.init(backend=gs.amdgpu)
 
 import wandb
 from reward_wrapper import SprintFlatTerrain
@@ -45,7 +46,7 @@ def get_train_cfg(exp_name, max_iterations):
             "load_run": -1,
             "log_interval": 1,
             "max_iterations": max_iterations,
-            "num_steps_per_env": 24, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
+            "num_steps_per_env": 64, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
             "policy_class_name": "ActorCritic",
             "record_interval": 100,
             "resume": False,
@@ -102,15 +103,15 @@ def get_cfgs():
         "kp": 60.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
         "kd": 2.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
-        "termination_if_roll_greater_than": 15,  # degree
-        "termination_if_pitch_greater_than": 15,  # degree
+        "termination_if_roll_greater_than": 25,  # degree
+        "termination_if_pitch_greater_than": 35,  # degree
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s":20.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
-        "action_scale": 0.5, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
+        "action_scale": 0.4, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
-        "clip_actions": 100.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
+        "clip_actions": 1.2, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
         'use_terrain': False,
         'terrain_cfg': {
             'subterrain_types': 'flat_terrain', #create_random_terrains(), # 5x5 grid of random subterrain types that each start with flat terrain
@@ -141,27 +142,23 @@ def get_cfgs():
     reward_cfg = {
         "tracking_sigma": 0.3,
         "reward_scales": {
-            "tracking_lin_vel_x":  4.0,
+            "tracking_lin_vel_x":  6.0,
             "tracking_ang_vel":    1.0,
             "lin_vel_y":          -0.5,
-            "lin_vel_z":          -0.5,
-            "orientation":        -0.5,
-            "feet_air_time":       1.5,
-            "feet_slip":          -0.5,
+            "action_rate":        -0.001,
+            #"lin_vel_z":          -0.5,
+            #"orientation":        -0.5,
+            "feet_air_time":       1.0,
+            "feet_slip":          -0.3,
             "penalized_contact":  -1.0,
 
 
             #"ang_vel_xy":         -0.5,
             #"tracking_lin_vel_y":  1.0,
-            #"action_rate":        -0.001,
             #"torques":            -1e-5,
             #"smoothness":         -0.001,
-            # "similar_to_default": -0.3,
-            # "sideway_movement":   -1.5,
-            # "joint_motion":       -0.5,
             # "alive":               1.0,
             # "termination":        -3.0,
-            # "x_progress":          2.0
         },
     }
 
@@ -170,7 +167,7 @@ def get_cfgs():
         # Geschwindigkeitsbereich statt fester Werte
         "lin_vel_x_range": [0.3, 2.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
         "lin_vel_y_range": [-0.25, 0.25],     # seitliche Geschwindigkeit
-        "ang_vel_range": [-0.3, 0.3],       # Drehgeschwindigkeit (rad/s)
+        "ang_vel_range": [-0.0, 0.0],       # Drehgeschwindigkeit (rad/s)
         "resampling_time_s": 4.0,           # alle 4s neue Zielgeschwindigkeit
     }
     return env_cfg, obs_cfg, reward_cfg, command_cfg
@@ -180,7 +177,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="test")
     parser.add_argument("-B", "--num_envs", type=int, default=1024)
-    parser.add_argument("--max_iterations", type=int, default=1000)
+    parser.add_argument("--max_iterations", type=int, default=2000)
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument('--ckpt', type=int, default=1000)
     args = parser.parse_args()
@@ -208,7 +205,7 @@ def main():
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg,
     )
 
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda:0", curriculum=train_cfg["runner"]["curriculum"], delta=train_cfg["runner"]["curriculum_delta"], curriculum_threshold=train_cfg["runner"]["curriculum_threshold"])
+    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda", curriculum=train_cfg["runner"]["curriculum"], delta=train_cfg["runner"]["curriculum_delta"], curriculum_threshold=train_cfg["runner"]["curriculum_threshold"])
 
     if args.resume is not None:
         resume_dir = f'logs/{args.resume}'
@@ -228,9 +225,8 @@ if __name__ == "__main__":
 
 """
 To only see one of the GPUs: export CUDA_VISIBLE_DEVICES=1 (or 0)
-python train_walk_random_terrain.py -e go2-all-terrains-v0 -B 4096 --max_iterations 2000
+python fast_run/train.py -e test -B 4096 --max_iterations 2000
 
-python train_walk_random_terrain.py -e test -B 4096 --max_iterations 312
 resume : 
 python train_uneven.py -e go2-uneven-v4-resume -B 4096 --max_iterations 1000 --resume go2-uneven-v4 --ckpt 1000
 """
