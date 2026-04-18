@@ -2,17 +2,15 @@ import argparse
 import os
 import pickle
 import torch
-
 import genesis as gs
-gs.init(backend=gs.gpu)
-
+gs.init(backend=gs.metal)
 from rsl_rl.runners import OnPolicyRunner
 from reward_wrapper import SprintFlatTerrain
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--exp_name", type=str, default="go2-uneven")
+    parser.add_argument("-e", "--exp_name", type=str, default="test")
     parser.add_argument("-r", "--record",   action="store_true", default=True)
     parser.add_argument("--ckpt",           type=int, default=100)
     # Optional: override the commanded forward speed for evaluation
@@ -33,12 +31,6 @@ def main():
     # Optionally fix the terrain for reproducible evaluation
     if "terrain_cfg" in env_cfg:
         env_cfg["terrain_cfg"]["randomize"] = False
-        # Uncomment to test specific terrain sequences:
-        # env_cfg["terrain_cfg"]["n_subterrains"] = (4, 1)
-        # env_cfg["terrain_cfg"]["subterrain_types"] = [
-        #     ["wave_terrain"], ["pyramid_sloped_terrain"],
-        #     ["pyramid_stairs_terrain"], ["stairs_terrain"],
-        # ]
 
     env = SprintFlatTerrain(
         num_envs=1,
@@ -56,11 +48,22 @@ def main():
     runner.load(resume_path)
     policy = runner.get_inference_policy(device="mps")
 
-    # Fix the evaluation command so we can test a specific speed
     env.reset()
-    env.commands[:, 0] = args.vel_x    # forward velocity
-    env.commands[:, 1] = args.vel_y    # lateral velocity
-    env.commands[:, 2] = args.ang_vel  # yaw rate
+    
+    # --- NEU: Ramping Setup ---
+    # Wir starten bei 0 und definieren das Ziel
+    device = env.commands.device
+    current_commands = torch.zeros(3, device=device)
+    target_commands = torch.tensor([args.vel_x, args.vel_y, args.ang_vel], device=device)
+    
+    # Maximale Beschleunigung pro Sekunde (kannst du anpassen)
+    # [x_accel, y_accel, yaw_accel]
+    accel_limits = torch.tensor([2.0, 1.0, 1.5], device=device) 
+    
+    # Maximal erlaubte Änderung pro Simulationsschritt (dt)
+    max_step_change = accel_limits * env.dt 
+    # --------------------------
+
     # Disable random resampling during eval by making resampling_time huge
     env.resampling_time = int(1e9)
 
@@ -72,6 +75,18 @@ def main():
 
     with torch.no_grad():
         while True:
+            # --- NEU: Ramping Logik ---
+            # Berechne die Differenz zum Ziel
+            diff = target_commands - current_commands
+            
+            # Limitiere die Änderung auf unsere maximale Beschleunigung pro Schritt
+            step_change = torch.clamp(diff, -max_step_change, max_step_change)
+            
+            # Wende die Änderung an
+            current_commands += step_change
+            env.commands[:, :3] = current_commands
+            # --------------------------
+
             actions = policy(obs)
             obs, _, rews, dones, infos = env.step(actions)
             n_frames += 1
@@ -84,12 +99,11 @@ def main():
                 print(f"Saved recordings for checkpoint {args.ckpt}.")
                 break
 
-
 if __name__ == "__main__":
     main()
 
+
 """
-Usage examples:
-  python eval.py -e go2-fast-v1 -r --ckpt 1000 --vel_x 2.5
-  python eval.py -e go2-fast-v1 -r --ckpt 2000 --vel_x 3.0 --ang_vel 0.3
+Run evaluation:
+python fast_run/eval.py -e test --ckpt 2000
 """
