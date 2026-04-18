@@ -1,12 +1,11 @@
 import argparse
 import json
 import os
-os.environ['HSA_OVERRIDE_GFX_VERSION'] = '10.3.0'
 import pickle
 import shutil
 
 import genesis as gs
-gs.init(backend=gs.amdgpu)
+gs.init(backend=gs.gpu)
 
 import wandb
 from reward_wrapper import SprintFlatTerrain
@@ -27,7 +26,7 @@ def get_train_cfg(exp_name, max_iterations):
             "learning_rate": 0.001, # is adaptive 
             "max_grad_norm": 1.0, # gradient clipping (to prevent exploding gradients)
             "num_learning_epochs": 5, # how often do we reuse one rollout batch 
-            "num_mini_batches":4, # how many chunks the data is split into during training ((num_envs * num_steps_per_env) / num_mini_batches) 
+            "num_mini_batches":8, # how many chunks the data is split into during training ((num_envs * num_steps_per_env) / num_mini_batches) 
             "schedule": "adaptive",
             "use_clipped_value_loss": True,
             "value_loss_coef": 1.0, # weight of value loss in the total loss function; so 1.0 means value loss is equally important as policy loss
@@ -46,7 +45,7 @@ def get_train_cfg(exp_name, max_iterations):
             "load_run": -1,
             "log_interval": 1,
             "max_iterations": max_iterations,
-            "num_steps_per_env": 64, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
+            "num_steps_per_env": 48, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
             "policy_class_name": "ActorCritic",
             "record_interval": 100,
             "resume": False,
@@ -103,15 +102,15 @@ def get_cfgs():
         "kp": 60.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
         "kd": 2.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
-        "termination_if_roll_greater_than": 25,  # degree
-        "termination_if_pitch_greater_than": 35,  # degree
+        "termination_if_roll_greater_than": 20,  # degree
+        "termination_if_pitch_greater_than": 20,  # degree
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-        "episode_length_s":20.0,
+        "episode_length_s":15.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
-        "action_scale": 0.4, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
+        "action_scale": 0.5, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
-        "clip_actions": 1.2, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
+        "clip_actions": 1.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
         'use_terrain': False,
         'terrain_cfg': {
             'subterrain_types': 'flat_terrain', #create_random_terrains(), # 5x5 grid of random subterrain types that each start with flat terrain
@@ -140,17 +139,28 @@ def get_cfgs():
     }
 
     reward_cfg = {
-        "tracking_sigma": 0.3,
+        "tracking_sigma": 0.25,
         "reward_scales": {
-            "tracking_lin_vel_x":  6.0,
-            "tracking_ang_vel":    1.0,
+            "tracking_lin_vel_x":  2.0,
             "lin_vel_y":          -0.5,
-            "action_rate":        -0.001,
-            #"lin_vel_z":          -0.5,
-            #"orientation":        -0.5,
-            "feet_air_time":       1.0,
-            "feet_slip":          -0.3,
-            "penalized_contact":  -1.0,
+            #"paper_velocity":          2.0,
+            "feet_air_time":           1.0,     # Entspricht dem "Feet swing reward"
+            "paper_energy_penalty":   -0.0002,
+            "paper_orientation":      -1.0,
+            "paper_lateral_drift":    -0.2,
+            #"paper_height":           -0.5,
+            
+            "penalized_contact":      -0.5,
+
+
+
+            # "tracking_ang_vel":    1.0,
+            # "action_rate":        -0.001,
+            # #"lin_vel_z":          -0.5,
+            # #"orientation":        -0.5,
+            # "feet_air_time":       1.0,
+            # "feet_slip":          -0.3,
+            # "penalized_contact":  -1.0,
 
 
             #"ang_vel_xy":         -0.5,
@@ -165,8 +175,8 @@ def get_cfgs():
     command_cfg = {
         "num_commands": 3,
         # Geschwindigkeitsbereich statt fester Werte
-        "lin_vel_x_range": [0.3, 2.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
-        "lin_vel_y_range": [-0.25, 0.25],     # seitliche Geschwindigkeit
+        "lin_vel_x_range": [0.5, 3.5],      # min/max Vorwärtsgeschwindigkeit (m/s)
+        "lin_vel_y_range": [-0.0, 0.0],     # seitliche Geschwindigkeit
         "ang_vel_range": [-0.0, 0.0],       # Drehgeschwindigkeit (rad/s)
         "resampling_time_s": 4.0,           # alle 4s neue Zielgeschwindigkeit
     }

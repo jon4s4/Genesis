@@ -60,19 +60,22 @@ class SprintFlatTerrain(Go2Env):
     # ------------------------------------------------------------------
 
     def _reward_feet_air_time(self):
-        """Belohnt angemessene Flugzeiten der Füße (zwingt den Roboter in den Trab/Galopp)."""
-        contact = self.feet_contact                          # (num_envs, 4) bool
+        contact = self.feet_contact                         # (num_envs, 4) bool
         first_contact = (self.feet_air_time > 0) & contact
         self.feet_air_time += self.dt
 
-        # Ziel-Flugzeit skaliert mit der Vorwärtsgeschwindigkeit
-        target_air_time = 0.18 + 0.3 * torch.abs(self.commands[:, 0]).unsqueeze(1)
+        target_air_time = 0.18 + 0.12 * torch.abs(
+            self.commands[:, 0]
+        ).unsqueeze(1)  # längere Flugzeit bei höherer Zielgeschwindigkeit
 
+        # POSITIVER Reward: je länger der Fuß in der Luft war (bis zum Ziel), desto besser
         reward = torch.sum(
-            (self.feet_air_time - target_air_time).clip(max=0.0) * first_contact.float(),
+            self.feet_air_time.clip(max=target_air_time) * first_contact.float(),
             dim=1,
         )
-        self.feet_air_time *= (~contact).float()
+        # Nur aktiv wenn Vorwärtsbewegung gewünscht
+        reward *= (torch.abs(self.commands[:, 0]) > 0.1).float()
+        self.feet_air_time *= (~contact).float()            # Reset bei Touchdown
         return reward
 
     def _reward_feet_slip(self):
@@ -98,3 +101,46 @@ class SprintFlatTerrain(Go2Env):
         """Gibt eine dicke Strafe, wenn der Roboter umfällt (nicht bei Timeouts!)."""
         non_timeout_reset = (self.reset_buf == 1) & (self.episode_length_buf <= self.max_episode_length)
         return non_timeout_reset.float()
+    
+    # ==================================================================
+    # Paper-Based Rewards (L1-Norms & Absolute Werte)
+    # ==================================================================
+
+    def _reward_paper_velocity(self):
+        error = torch.abs(self.commands[:, 0] - self.base_lin_vel[:, 0])
+        # Wenn der Fehler größer als 1.0 ist, gibt es 0 Reward, aber keine Bestrafung!
+        return torch.clamp(1.0 - error, min=0.0)
+
+    def _reward_paper_energy_penalty(self):
+        """
+        Energy penalty: |tau * q_dot|
+        Bestraft die erbrachte mechanische Leistung (Drehmoment * Winkelgeschwindigkeit).
+        Das Integral über die Zeit wird hier durch den diskreten Zeitschritt (und den Faktor in der Config) abgebildet.
+        """
+        power = torch.abs(self.torques * self.dof_vel)
+        return torch.sum(power, dim=1)
+
+    def _reward_paper_orientation(self):
+        """
+        Orientation penalty: ||q - (1, 0, 0, 0)||
+        Bestraft Abweichungen von der neutralen Rotation.
+        Hinweis: Genesis nutzt Quaternions im Format [w, x, y, z]. 
+        Die aufrechte Position ist [1.0, 0.0, 0.0, 0.0].
+        """
+        target_quat = torch.tensor([1.0, 0.0, 0.0, 0.0], device=self.device)
+        # L2-Norm (Euklidische Distanz) zwischen der aktuellen und der Ziel-Quaternion
+        return torch.norm(self.base_quat - target_quat, dim=1)
+
+    def _reward_paper_lateral_drift(self):
+        """
+        Lateral drift penalty: |y|
+        Bestraft absolute seitliche Abweichung vom Startpunkt.
+        """
+        return torch.abs(self.base_pos[:, 1] - self.base_init_pos[1])
+
+    def _reward_paper_height(self):
+        """
+        Height penalty: |z - 0.3|
+        Zwingt den Roboter, den Rumpf exakt auf 30 cm Höhe zu halten.
+        """
+        return torch.abs(self.base_pos[:, 2] - 0.34)

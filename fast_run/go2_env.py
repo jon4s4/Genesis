@@ -216,14 +216,15 @@ class Go2Env:
     # -------------------------------------------------------------------------
 
     def resample_commands(self, env_ids):
-        """Sample new random velocity targets for the given environments."""
         n = len(env_ids)
         if n == 0:
             return
-        self.commands[env_ids, 0] = torch.empty(n, device=self.device).uniform_(*self.lin_vel_x_range)
+        # Untere Grenze bleibt bei 0.5, obere wächst mit Curriculum
+        v_max = self.lin_vel_x_range[1]
+        v_min = self.lin_vel_x_range[0]
+        self.commands[env_ids, 0] = torch.empty(n, device=self.device).uniform_(v_min, v_max)
         self.commands[env_ids, 1] = torch.empty(n, device=self.device).uniform_(*self.lin_vel_y_range)
         self.commands[env_ids, 2] = torch.empty(n, device=self.device).uniform_(*self.ang_vel_range)
-        # Dead-band: small commands → 0 to avoid noise training
         self.commands[env_ids, :2] *= (torch.abs(self.commands[env_ids, :2]) > 0.2).float()
 
     # -------------------------------------------------------------------------
