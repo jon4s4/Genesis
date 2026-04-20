@@ -26,7 +26,7 @@ def get_train_cfg(exp_name, max_iterations):
             "learning_rate": 0.001, # is adaptive 
             "max_grad_norm": 1.0, # gradient clipping (to prevent exploding gradients)
             "num_learning_epochs": 5, # how often do we reuse one rollout batch 
-            "num_mini_batches":8, # how many chunks the data is split into during training ((num_envs * num_steps_per_env) / num_mini_batches) 
+            "num_mini_batches":6, # how many chunks the data is split into during training ((num_envs * num_steps_per_env) / num_mini_batches) 
             "schedule": "adaptive",
             "use_clipped_value_loss": True,
             "value_loss_coef": 1.0, # weight of value loss in the total loss function; so 1.0 means value loss is equally important as policy loss
@@ -56,7 +56,7 @@ def get_train_cfg(exp_name, max_iterations):
             "init_at_random_ep_len": False,
             "curriculum": True, # whether to use curriculum learning
             "curriculum_delta": 0.02, # how much to increase the target linear velocity during curriculum learning
-            "curriculum_threshold": 0.80 # the threshold for the mean of the last 20 tracking rewards to increase the target linear velocity 
+            "curriculum_threshold": 0.85 # the threshold for the mean of the last 20 tracking rewards to increase the target linear velocity 
         },
         "runner_class_name": "OnPolicyRunner",
         "seed": 1,
@@ -99,8 +99,8 @@ def get_cfgs():
             "RL_calf_joint",
         ],
         # PD
-        "kp": 60.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
-        "kd": 2.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
+        "kp": 50.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
+        "kd": 1.5, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
         "termination_if_roll_greater_than": 20,  # degree
         "termination_if_pitch_greater_than": 20,  # degree
@@ -139,7 +139,7 @@ def get_cfgs():
     }
 
     reward_cfg = {
-        "tracking_sigma": 0.25,
+        "tracking_sigma": 0.20,
         "reward_scales": {
             "tracking_lin_vel_x":  2.0,
             "lin_vel_y":          -0.5,
@@ -175,7 +175,7 @@ def get_cfgs():
     command_cfg = {
         "num_commands": 3,
         # Geschwindigkeitsbereich statt fester Werte
-        "lin_vel_x_range": [0.5, 3.5],      # min/max Vorwärtsgeschwindigkeit (m/s)
+        "lin_vel_x_range": [0.5, 5.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
         "lin_vel_y_range": [-0.0, 0.0],     # seitliche Geschwindigkeit
         "ang_vel_range": [-0.0, 0.0],       # Drehgeschwindigkeit (rad/s)
         "resampling_time_s": 4.0,           # alle 4s neue Zielgeschwindigkeit
