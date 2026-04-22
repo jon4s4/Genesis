@@ -20,7 +20,7 @@ def get_train_cfg(exp_name, max_iterations):
         "algorithm": {
             "clip_param": 0.2, # control how much the policy is allowed to change at each update step (increase => faster learning but riskier, decrease => slower but more stable)
             "desired_kl": 0.01, # how much change do I want between the old and new policy (using an adaptive schedule in this implementation)
-            "entropy_coef": 0.01, # rewards randomness in action selection (might make sense to set it higher in early training and lower it later)
+            "entropy_coef": 0.005, # rewards randomness in action selection (might make sense to set it higher in early training and lower it later)
             "gamma": 0.99, # determines how much agent values future rewards 
             "lam": 0.95, # lambda parameter for GAE (Generalized Advantage Estimation); higher means advantages depend more on long-term returns, lower means more on short-term returns
             "learning_rate": 0.001, # is adaptive 
@@ -36,7 +36,7 @@ def get_train_cfg(exp_name, max_iterations):
             "activation": "elu",
             "actor_hidden_dims": [512, 256, 128],# try fewer
             "critic_hidden_dims": [512, 256, 128],
-            "init_noise_std": 1.0,
+            "init_noise_std": 0.4,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -45,7 +45,7 @@ def get_train_cfg(exp_name, max_iterations):
             "load_run": -1,
             "log_interval": 1,
             "max_iterations": max_iterations,
-            "num_steps_per_env": 48, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
+            "num_steps_per_env": 24, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
             "policy_class_name": "ActorCritic",
             "record_interval": 100,
             "resume": False,
@@ -141,17 +141,16 @@ def get_cfgs():
     reward_cfg = {
         "tracking_sigma": 0.20,
         "reward_scales": {
-            "tracking_lin_vel_x":  2.0,
+            "tracking_lin_vel_x":  2.5,
             "lin_vel_y":          -0.5,
-            #"paper_velocity":          2.0,
             "feet_air_time":           1.0,     # Entspricht dem "Feet swing reward"
             "paper_energy_penalty":   -0.0002,
             "paper_orientation":      -1.0,
             "paper_lateral_drift":    -0.2,
-            #"paper_height":           -0.5,
-            
             "penalized_contact":      -0.5,
 
+            #"paper_velocity":          2.0,
+            #"paper_height":           -0.5,
 
 
             # "tracking_ang_vel":    1.0,
