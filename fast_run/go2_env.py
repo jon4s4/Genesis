@@ -74,7 +74,7 @@ class Go2Env:
 
     def _setup_scene(self, show_viewer):
         self.scene: Scene = gs.Scene(
-            sim_options=gs.options.SimOptions(dt=self.dt, substeps=3),
+            sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
             viewer_options=gs.options.ViewerOptions(
                 max_FPS=int(0.5 / self.dt),
                 camera_pos=(2.0, 0.0, 2.5),

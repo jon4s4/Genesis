@@ -105,5 +105,5 @@ if __name__ == "__main__":
 
 """
 Run evaluation:
-python fast_run/eval.py -e test --ckpt 2000 -vel_x 4.0
+python fast_run/eval.py -e test --ckpt 2000 --vel_x 4.0
 """
