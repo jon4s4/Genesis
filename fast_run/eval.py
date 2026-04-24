@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import genesis as gs
 gs.init(backend=gs.amdgpu)
 from rsl_rl.runners import OnPolicyRunner
-from reward_wrapper_second import SprintFlatTerrain
+from reward_wrapper import SprintFlatTerrain
  
 
 
