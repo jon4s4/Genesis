@@ -2,10 +2,12 @@ import argparse
 import os
 import pickle
 import torch
+import matplotlib.pyplot as plt
 import genesis as gs
 gs.init(backend=gs.amdgpu)
 from rsl_rl.runners import OnPolicyRunner
-from reward_wrapper import SprintFlatTerrain
+from reward_wrapper_second import SprintFlatTerrain
+ 
 
 
 def main():
@@ -73,6 +75,9 @@ def main():
     if args.record:
         env.start_recording(record_internal=False)
 
+    actual_speeds = []
+    target_speeds = []
+
     with torch.no_grad():
         while True:
             # --- NEU: Ramping Logik ---
@@ -89,7 +94,11 @@ def main():
 
             actions = policy(obs)
             obs, _, rews, dones, infos = env.step(actions)
+
             n_frames += 1
+
+            actual_speeds.append(env.base_lin_vel[0, 0].item())
+            target_speeds.append(env.commands[0, 0].item())
 
             if args.record and n_frames == 2000:
                 env.stop_recording(
@@ -98,6 +107,18 @@ def main():
                 )
                 print(f"Saved recordings for checkpoint {args.ckpt}.")
                 break
+
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(target_speeds, label="Ziel-Geschwindigkeit (Command)", linestyle="--", color="gray")
+    plt.plot(actual_speeds, label="Tatsächliche Geschwindigkeit", color="blue")
+    plt.xlabel("Simulationsschritte")
+    plt.ylabel("Geschwindigkeit in x-Richtung (m/s)")
+    plt.title("Beschleunigungsprofil des Go2")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("speed_plot.png")
+    plt.show()
 
 if __name__ == "__main__":
     main()
