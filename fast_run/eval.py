@@ -118,7 +118,6 @@ def main():
     plt.legend()
     plt.grid(True)
     plt.savefig("speed_plot.png")
-    plt.show()
 
 if __name__ == "__main__":
     main()

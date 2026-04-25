@@ -45,7 +45,7 @@ def get_train_cfg(exp_name, max_iterations):
             "load_run": -1,
             "log_interval": 1,
             "max_iterations": max_iterations,
-            "num_steps_per_env": 24, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
+            "num_steps_per_env": 48, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
             "policy_class_name": "ActorCritic",
             "record_interval": 100,
             "resume": False,
@@ -149,7 +149,7 @@ def get_cfgs():
             "paper_orientation":      -1.0,
             "paper_lateral_drift":    -0.2,
             #"paper_height":           -0.5,
-            
+
             "penalized_contact":      -0.5,
 
 

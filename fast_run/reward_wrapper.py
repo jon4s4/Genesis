@@ -58,7 +58,7 @@ class SprintFlatTerrain(Go2Env):
         first_contact = (self.feet_air_time > 0) & contact
         self.feet_air_time += self.dt
 
-        target_air_time = 0.18 + 0.3 * torch.abs(
+        target_air_time = 0.18 + 0.6 * torch.abs(
             self.commands[:, 0]
         ).unsqueeze(1)  # längere Flugzeit bei höherer Zielgeschwindigkeit
 
