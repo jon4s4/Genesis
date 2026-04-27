@@ -1,10 +1,11 @@
 import argparse
 import os
 import pickle
+import matplotlib.pyplot as plt
 import torch
 import matplotlib.pyplot as plt
 import genesis as gs
-gs.init(backend=gs.amdgpu)
+gs.init(backend=gs.metal)
 from rsl_rl.runners import OnPolicyRunner
 from reward_wrapper import SprintFlatTerrain
  
@@ -45,10 +46,10 @@ def main():
     )
 
     # Match the device used during training (CPU)
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda")
+    runner = OnPolicyRunner(env, train_cfg, log_dir, device="mps")
     resume_path = os.path.join(log_dir, f"model_{args.ckpt}.pt")
     runner.load(resume_path)
-    policy = runner.get_inference_policy(device="cuda")
+    policy = runner.get_inference_policy(device="mps")
 
     env.reset()
     
@@ -107,7 +108,6 @@ def main():
                 )
                 print(f"Saved recordings for checkpoint {args.ckpt}.")
                 break
-
 
     plt.figure(figsize=(10, 5))
     plt.plot(target_speeds, label="Ziel-Geschwindigkeit (Command)", linestyle="--", color="gray")
