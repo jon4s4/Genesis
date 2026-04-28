@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import torch
 import matplotlib.pyplot as plt
 import genesis as gs
-gs.init(backend=gs.metal)
+gs.init(backend=gs.gpu)
 from rsl_rl.runners import OnPolicyRunner
 from reward_wrapper import SprintFlatTerrain
  
@@ -46,10 +46,10 @@ def main():
     )
 
     # Match the device used during training (CPU)
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="mps")
+    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda")
     resume_path = os.path.join(log_dir, f"model_{args.ckpt}.pt")
     runner.load(resume_path)
-    policy = runner.get_inference_policy(device="mps")
+    policy = runner.get_inference_policy(device="cuda")
 
     env.reset()
     

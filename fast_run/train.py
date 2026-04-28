@@ -36,7 +36,7 @@ def get_train_cfg(exp_name, max_iterations):
             "activation": "elu",
             "actor_hidden_dims": [512, 256, 128],# try fewer
             "critic_hidden_dims": [512, 256, 128],
-            "init_noise_std": 0.5,
+            "init_noise_std": 2.0,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -47,7 +47,7 @@ def get_train_cfg(exp_name, max_iterations):
             "max_iterations": max_iterations,
             "num_steps_per_env": 48, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
             "policy_class_name": "ActorCritic",
-            "record_interval": 100,
+            "record_interval": 400,
             "resume": False,
             "resume_path": None,
             "run_name": "",
@@ -59,7 +59,7 @@ def get_train_cfg(exp_name, max_iterations):
             "curriculum_threshold": 0.85 # the threshold for the mean of the last 20 tracking rewards to increase the target linear velocity 
         },
         "runner_class_name": "OnPolicyRunner",
-        "seed": 1,
+        "seed": 2,
     }
 
     return train_cfg_dict
@@ -175,7 +175,7 @@ def get_cfgs():
     command_cfg = {
         "num_commands": 3,
         # Geschwindigkeitsbereich statt fester Werte
-        "lin_vel_x_range": [0.5, 5.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
+        "lin_vel_x_range": [0.5, 6.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
         "lin_vel_y_range": [-0.0, 0.0],     # seitliche Geschwindigkeit
         "ang_vel_range": [-0.0, 0.0],       # Drehgeschwindigkeit (rad/s)
         "resampling_time_s": 4.0,           # alle 4s neue Zielgeschwindigkeit
