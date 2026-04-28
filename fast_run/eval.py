@@ -3,9 +3,9 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 import torch
-import matplotlib.pyplot as plt
+
 import genesis as gs
-gs.init(backend=gs.gpu)
+gs.init(backend=gs.metal)
 from rsl_rl.runners import OnPolicyRunner
 from reward_wrapper import SprintFlatTerrain
  
@@ -46,10 +46,10 @@ def main():
     )
 
     # Match the device used during training (CPU)
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda")
+    runner = OnPolicyRunner(env, train_cfg, log_dir, device="mps")
     resume_path = os.path.join(log_dir, f"model_{args.ckpt}.pt")
     runner.load(resume_path)
-    policy = runner.get_inference_policy(device="cuda")
+    policy = runner.get_inference_policy(device="mps")
 
     env.reset()
     
@@ -101,7 +101,7 @@ def main():
             actual_speeds.append(env.base_lin_vel[0, 0].item())
             target_speeds.append(env.commands[0, 0].item())
 
-            if args.record and n_frames == 2000:
+            if args.record and n_frames == 1000:
                 env.stop_recording(
                     save_path_behind=f"{args.exp_name}_{args.ckpt}_behind.mp4",
                     save_path_side=f"{args.exp_name}_{args.ckpt}_side.mp4",

@@ -4,7 +4,7 @@ import pickle
 import torch
 import matplotlib.pyplot as plt
 import genesis as gs
-gs.init(backend=gs.amdgpu)
+gs.init(backend=gs.metal)
 from rsl_rl.runners import OnPolicyRunner
 from reward_wrapper_second import SprintFlatTerrain
  
@@ -45,10 +45,10 @@ def main():
     )
 
     # Match the device used during training (CPU)
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda")
+    runner = OnPolicyRunner(env, train_cfg, log_dir, device="mps")
     resume_path = os.path.join(log_dir, f"model_{args.ckpt}.pt")
     runner.load(resume_path)
-    policy = runner.get_inference_policy(device="cuda")
+    policy = runner.get_inference_policy(device="mps")
 
     env.reset()
     
@@ -100,7 +100,7 @@ def main():
             actual_speeds.append(env.base_lin_vel[0, 0].item())
             target_speeds.append(env.commands[0, 0].item())
 
-            if args.record and n_frames == 2000:
+            if args.record and n_frames == 1000:
                 env.stop_recording(
                     save_path_behind=f"{args.exp_name}_{args.ckpt}_behind.mp4",
                     save_path_side=f"{args.exp_name}_{args.ckpt}_side.mp4",
@@ -118,7 +118,6 @@ def main():
     plt.legend()
     plt.grid(True)
     plt.savefig("speed_plot.png")
-    plt.show()
 
 if __name__ == "__main__":
     main()
@@ -126,5 +125,5 @@ if __name__ == "__main__":
 
 """
 Run evaluation:
-python fast_run/eval.py -e test --ckpt 2000 --vel_x 4.0
+python fast_run/eval.py -e test --ckpt 2000 --vel_x 5.0
 """
