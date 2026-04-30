@@ -20,7 +20,7 @@ def get_train_cfg(exp_name, max_iterations):
         "algorithm": {
             "clip_param": 0.2, # control how much the policy is allowed to change at each update step (increase => faster learning but riskier, decrease => slower but more stable)
             "desired_kl": 0.01, # how much change do I want between the old and new policy (using an adaptive schedule in this implementation)
-            "entropy_coef": 0.001, # rewards randomness in action selection (might make sense to set it higher in early training and lower it later)
+            "entropy_coef": 0.0005, # rewards randomness in action selection (might make sense to set it higher in early training and lower it later)
             "gamma": 0.99, # determines how much agent values future rewards 
             "lam": 0.95, # lambda parameter for GAE (Generalized Advantage Estimation); higher means advantages depend more on long-term returns, lower means more on short-term returns
             "learning_rate": 0.001, # is adaptive 
@@ -36,7 +36,7 @@ def get_train_cfg(exp_name, max_iterations):
             "activation": "elu",
             "actor_hidden_dims": [512, 256, 128],# try fewer
             "critic_hidden_dims": [512, 256, 128],
-            "init_noise_std": 2.0,
+            "init_noise_std": 1.0,
         },
         "runner": {
             "algorithm_class_name": "PPO",
@@ -47,7 +47,7 @@ def get_train_cfg(exp_name, max_iterations):
             "max_iterations": max_iterations,
             "num_steps_per_env": 48, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
             "policy_class_name": "ActorCritic",
-            "record_interval": 400,
+            "record_interval": 200,
             "resume": False,
             "resume_path": None,
             "run_name": "",
@@ -59,7 +59,7 @@ def get_train_cfg(exp_name, max_iterations):
             "curriculum_threshold": 0.85 # the threshold for the mean of the last 20 tracking rewards to increase the target linear velocity 
         },
         "runner_class_name": "OnPolicyRunner",
-        "seed": 2,
+        "seed": 1,
     }
 
     return train_cfg_dict
@@ -99,14 +99,14 @@ def get_cfgs():
             "RL_calf_joint",
         ],
         # PD
-        "kp": 50.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
-        "kd": 1.5, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
+        "kp": 80.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
+        "kd": 2.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
         "termination_if_roll_greater_than": 20,  # degree
         "termination_if_pitch_greater_than": 20,  # degree
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-        "episode_length_s":15.0,
+        "episode_length_s":10.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
         "action_scale": 0.5, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
@@ -139,18 +139,18 @@ def get_cfgs():
     }
 
     reward_cfg = {
-        "tracking_sigma": 0.20,
+        "tracking_sigma": 0.3,
         "reward_scales": {
-            "tracking_lin_vel_x":  2.0,
-            "lin_vel_y":          -0.5,
+            "tracking_lin_vel_x":  1.0,
+            "lin_vel_y":          -0.1,
             #"paper_velocity":          2.0,
-            "feet_air_time":           1.0,     # Entspricht dem "Feet swing reward"
-            "paper_energy_penalty":   -0.0002,
-            "paper_orientation":      -1.0,
-            "paper_lateral_drift":    -0.2,
+            "feet_air_time":           0.4,     # Entspricht dem "Feet swing reward"
+            "paper_energy_penalty":   -0.00002,
+            "paper_orientation":      -0.4,
+            "paper_lateral_drift":    -0.04,
             #"paper_height":           -0.5,
 
-            "penalized_contact":      -0.5,
+            "penalized_contact":      -0.1,
 
 
 
@@ -175,7 +175,7 @@ def get_cfgs():
     command_cfg = {
         "num_commands": 3,
         # Geschwindigkeitsbereich statt fester Werte
-        "lin_vel_x_range": [0.5, 6.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
+        "lin_vel_x_range": [0.5, 5.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
         "lin_vel_y_range": [-0.0, 0.0],     # seitliche Geschwindigkeit
         "ang_vel_range": [-0.0, 0.0],       # Drehgeschwindigkeit (rad/s)
         "resampling_time_s": 4.0,           # alle 4s neue Zielgeschwindigkeit
