@@ -13,7 +13,6 @@ class SprintFlatTerrain(Go2Env):
         return torch.exp(-error / self.reward_cfg["tracking_sigma"])
 
 
-
     def _reward_paper_velocity(self):
         error = torch.abs(self.commands[:, 0] - self.base_lin_vel[:, 0])
         # Wenn der Fehler größer als 1.0 ist, gibt es 0 Reward, aber keine Bestrafung!

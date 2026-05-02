@@ -106,7 +106,7 @@ def get_cfgs():
         "termination_if_pitch_greater_than": 20,  # degree
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-        "episode_length_s":10.0,
+        "episode_length_s":8.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
         "action_scale": 0.5, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
@@ -114,8 +114,8 @@ def get_cfgs():
         'use_terrain': False,
         'terrain_cfg': {
             'subterrain_types': 'flat_terrain', #create_random_terrains(), # 5x5 grid of random subterrain types that each start with flat terrain
-            'n_subterrains': (3, 1),
-            'subterrain_size': (12.0, 12.0),
+            'n_subterrains': (8, 1),
+            'subterrain_size': (25.0, 12.0),
             'horizontal_scale': 0.25, # determines the number of scales per tile, so here 12/0.25 = 48 per tile
             'vertical_scale': 0.005,
             'randomize': False,
