@@ -13,10 +13,9 @@ class SprintFlatTerrain(Go2Env):
         return torch.exp(-error / self.reward_cfg["tracking_sigma"])
 
 
-
     def _reward_paper_velocity(self):
         error = torch.abs(self.commands[:, 0] - self.base_lin_vel[:, 0])
-        # Wenn der Fehler größer als 1.0 ist, gibt es 0 Reward, aber keine Bestrafung!
+
         return torch.clamp(1.0 - error, min=0.0)
 
     def _reward_paper_energy_penalty(self):
@@ -54,22 +53,21 @@ class SprintFlatTerrain(Go2Env):
 
     
     def _reward_feet_air_time(self):
-        contact = self.feet_contact                         # (num_envs, 4) bool
+        contact = self.feet_contact
         first_contact = (self.feet_air_time > 0) & contact
         self.feet_air_time += self.dt
 
-        target_air_time = 0.2 + 0.2 * torch.abs(
+        # Gecappt — bei 10 m/s realistisch ~0.08-0.15s (Galopp)
+        target_air_time = (0.08 + 0.02 * torch.abs(
             self.commands[:, 0]
-        ).unsqueeze(1).clamp(max=0.45)  # längere Flugzeit bei höherer Zielgeschwindigkeit
+        ).unsqueeze(1)).clamp(max=0.20)  # ← max 0.20s statt 3.18s!
 
-        # POSITIVER Reward: je länger der Fuß in der Luft war (bis zum Ziel), desto besser
         reward = torch.sum(
-            self.feet_air_time.clip(max=target_air_time) * first_contact.float(),
+            self.feet_air_time.clamp(max=target_air_time) * first_contact.float(),
             dim=1,
         )
-        # Nur aktiv wenn Vorwärtsbewegung gewünscht
         reward *= (torch.abs(self.commands[:, 0]) > 0.1).float()
-        self.feet_air_time *= (~contact).float()            # Reset bei Touchdown
+        self.feet_air_time *= (~contact).float()
         return reward
     
 

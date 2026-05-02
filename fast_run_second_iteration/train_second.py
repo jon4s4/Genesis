@@ -45,9 +45,9 @@ def get_train_cfg(exp_name, max_iterations):
             "load_run": -1,
             "log_interval": 1,
             "max_iterations": max_iterations,
-            "num_steps_per_env": 96, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
+            "num_steps_per_env": 64, # how many steps to take in each environment before updating the policy (maybe increase this bc we have longer episodes now and could make more sense to sample more from the enviornment before updating the policy)
             "policy_class_name": "ActorCritic",
-            "record_interval": 100,
+            "record_interval": 200,
             "resume": False,
             "resume_path": None,
             "run_name": "",
@@ -56,7 +56,7 @@ def get_train_cfg(exp_name, max_iterations):
             "init_at_random_ep_len": False,
             "curriculum": True, # whether to use curriculum learning
             "curriculum_delta": 0.03, # how much to increase the target linear velocity during curriculum learning
-            "curriculum_threshold": 0.85 # the threshold for the mean of the last 20 tracking rewards to increase the target linear velocity 
+            "curriculum_threshold": 0.80 # the threshold for the mean of the last 20 tracking rewards to increase the target linear velocity 
         },
         "runner_class_name": "OnPolicyRunner",
         "seed": 1,
@@ -99,23 +99,23 @@ def get_cfgs():
             "RL_calf_joint",
         ],
         # PD
-        "kp": 60.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
+        "kp": 80.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
         "kd": 2.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
         "termination_if_roll_greater_than": 20,  # degree
         "termination_if_pitch_greater_than": 20,  # degree
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-        "episode_length_s":15.0,
+        "episode_length_s":8.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
         "action_scale": 0.5, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
-        "clip_actions": 1.5, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
+        "clip_actions": 1.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
         'use_terrain': False,
         'terrain_cfg': {
             'subterrain_types': 'flat_terrain', #create_random_terrains(), # 5x5 grid of random subterrain types that each start with flat terrain
-            'n_subterrains': (3, 1),
-            'subterrain_size': (12.0, 12.0),
+            'n_subterrains': (8, 1),
+            'subterrain_size': (25.0, 12.0),
             'horizontal_scale': 0.25, # determines the number of scales per tile, so here 12/0.25 = 48 per tile
             'vertical_scale': 0.005,
             'randomize': False,
@@ -139,18 +139,18 @@ def get_cfgs():
     }
 
     reward_cfg = {
-        "tracking_sigma": 0.50,
+        "tracking_sigma": 0.8,
         "reward_scales": {
-            "tracking_lin_vel_x":       2.0,
-            "lin_vel_y":                -0.1,
+            "tracking_lin_vel_x":  5.0,
+            "lin_vel_y":          -0.1,
             #"paper_velocity":          2.0,
-            "feet_air_time":           1.0,     # Entspricht dem "Feet swing reward"
-            "paper_energy_penalty":   -0.00005,
-            "paper_orientation":      -0.1,
-            "paper_lateral_drift":    -0.1,
+            "feet_air_time":           2.5,     # Entspricht dem "Feet swing reward"
+            "paper_energy_penalty":   -0.0002,
+            "paper_orientation":      -1.0,
+            "paper_lateral_drift":    -1.5,
             #"paper_height":           -0.5,
-            
-            "penalized_contact":      -0.5,
+
+            "penalized_contact":      -1.0,
 
 
 
@@ -178,7 +178,7 @@ def get_cfgs():
         "lin_vel_x_range": [4.0, 10.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
         "lin_vel_y_range": [-0.0, 0.0],     # seitliche Geschwindigkeit
         "ang_vel_range": [-0.0, 0.0],       # Drehgeschwindigkeit (rad/s)
-        "resampling_time_s": 4.0,           # alle 4s neue Zielgeschwindigkeit
+        "resampling_time_s": 3.0,           # alle 4s neue Zielgeschwindigkeit
     }
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
