@@ -34,7 +34,7 @@ def get_train_cfg(exp_name, max_iterations):
         "init_member_classes": {},
         "policy": {
             "activation": "elu",
-            "actor_hidden_dims": [512, 256, 128],# try fewer
+            "actor_hidden_dims": [256, 128, 64],# try fewer
             "critic_hidden_dims": [512, 256, 128],
             "init_noise_std": 1.0,
         },
