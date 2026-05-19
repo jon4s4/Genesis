@@ -61,7 +61,7 @@ def main():
     
     # Maximale Beschleunigung pro Sekunde (kannst du anpassen)
     # [x_accel, y_accel, yaw_accel]
-    accel_limits = torch.tensor([2.0, 1.0, 1.5], device=device) 
+    accel_limits = torch.tensor([1.0, 1.0, 1.5], device=device) 
     
     # Maximal erlaubte Änderung pro Simulationsschritt (dt)
     max_step_change = accel_limits * env.dt 
