@@ -28,8 +28,6 @@ class Go2Env:
         self._find_link_indices()
         self._setup_reward_functions()
         self._initialize_buffers()
-        # === NEU: Height Map Buffer initialisieren ===
-        self._setup_height_map()
         # Resample initial commands now that buffers exist
         self.resample_commands(torch.arange(num_envs, device=self.device))
         self.reset()
@@ -76,7 +74,7 @@ class Go2Env:
 
     def _setup_scene(self, show_viewer):
         self.scene: Scene = gs.Scene(
-            sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
+            sim_options=gs.options.SimOptions(dt=self.dt, substeps=10),
             viewer_options=gs.options.ViewerOptions(
                 max_FPS=int(0.5 / self.dt),
                 camera_pos=(2.0, 0.0, 2.5),
@@ -98,20 +96,64 @@ class Go2Env:
                 break
 
     def _add_terrain(self):
-        """Add terrain to scene. Currently using flat plane as Genesis Terrain API differs."""
-        # Genesis hat keine built-in Terrain-Generator wie Legged-Gym
-        # Für jetzt: Nutze flaches Plane, später mit echtem Terrain erweitern
-        
-        self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
-        
+        """Erzeugt das prozedurale Gelände basierend auf der Konfiguration."""
         if self.use_terrain:
-            print("⚠️  Note: Genesis Terrain-Generator wird noch nicht unterstützt.")
-            print("    Trainiere jetzt auf flachem Terrain.")
-            print("    TODO: Custom Terrain-Generator implementieren")
+            # Holen der Parameter aus der train.py Config
+            terrain_cfg = self.env_cfg.get("terrain_cfg", {})
+            n_subterrains = terrain_cfg.get("n_subterrains", (8, 8))
+            subterrain_size = terrain_cfg.get("subterrain_size", (12.0, 12.0))
+            horizontal_scale = terrain_cfg.get("horizontal_scale", 0.25)
+            vertical_scale = terrain_cfg.get("vertical_scale", 0.005)
+            randomize = terrain_cfg.get("randomize", False)
+            
+            # Deine Liste aus train.py: ['flat_terrain', 'random_uniform_terrain', 'sloped_terrain']
+            types_pool = terrain_cfg.get("subterrain_types", ["flat_terrain"])
+            
+            # Wir bauen ein 2D-Grid (Matrix) für die n_subterrains auf
+            subterrain_types = []
+            for r in range(n_subterrains[0]):
+                row = []
+                for c in range(n_subterrains[1]):
+                    # Überprüfung, ob wir uns in den zentralen Spawn-Kacheln befinden.
+                    # Das hält die Start-Zone flach und verhindert Physik-Glitches beim Spawn.
+                    if abs(r - n_subterrains[0] // 2) <= 1 and abs(c - n_subterrains[1] // 2) <= 1:
+                        row.append("flat_terrain")
+                    else:
+                        # Zufällige Auswahl aus deinen definierten Terrain-Typen (nutzt np aus go2_env)
+                        row.append(np.random.choice(types_pool))
+                subterrain_types.append(row)
+
+            # Terrain zur Genesis-Szene hinzufügen
+            self.scene.add_entity(
+                morph=gs.morphs.Terrain(
+                    n_subterrains=n_subterrains,
+                    subterrain_size=subterrain_size,
+                    horizontal_scale=horizontal_scale,
+                    vertical_scale=vertical_scale,
+                    subterrain_types=subterrain_types,
+                    randomize=randomize,
+                )
+            )
+            print(f"[Genesis] Prozedurales Rough Terrain Grid ({n_subterrains[0]}x{n_subterrains[1]}) erfolgreich generiert.")
+        else:
+            # Fallback auf die flache Standard-Ebene
+            self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
+            print("[Genesis] Standard flache Ebene geladen.")
+
+        # Startposition des Roboters definieren
+        center_x = (n_subterrains[0] * subterrain_size[0]) / 2.0
+        center_y = (n_subterrains[1] * subterrain_size[1]) / 2.0
         
-        # Startposition setzen
-        pos = self.env_cfg.get("base_init_pos", [0.0, 0.0, 0.42])
-        self.base_init_pos = torch.tensor(pos, device=self.device)
+        # Start-Höhe aus deiner Config (0.42) beibehalten
+        z_height = self.env_cfg.get("base_init_pos", [0.0, 0.0, 0.42])[2]
+        
+        # Setze die Startposition fest auf die berechnete Mitte
+        self.base_init_pos = torch.tensor([center_x, center_y, z_height], device=self.device)  
+
+    def _add_simple_plane(self):
+        self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
+        self.reset_environment_at_random_terrain = False
+        self.target_increased = False
 
     def _add_and_configure_robot(self):
         self.base_init_quat    = torch.tensor(self.env_cfg["base_init_quat"], device=self.device)
@@ -204,30 +246,6 @@ class Go2Env:
         self.feet_contact  = torch.zeros((self.num_envs, 4), device=self.device, dtype=torch.bool)
         self.feet_air_time = torch.zeros((self.num_envs, 4), device=self.device, dtype=gs.tc_float)
 
-    # === NEU: Height Map Support ===
-    def _setup_height_map(self):
-        """Initialize height map buffer for terrain observations."""
-        self.height_map = torch.zeros(
-            (self.num_envs, 1, 8, 8),  # (batch, channels, height, width)
-            device=self.device,
-            dtype=gs.tc_float
-        )
-        self.height_map_radius = 0.5  # 0.5m radius um Roboter
-        self.height_map_resolution = 8  # 8x8 Gitter
-
-    def _update_height_map(self):
-        """
-        Update local height map around each robot.
-        Vereinfachte Version - für Genesis ohne builtin Terrain API.
-        """
-        if not self.use_terrain or not hasattr(self, 'height_map'):
-            return
-        
-        # Vereinfachte Height Map: Alle Höhen = 0 (flach)
-        # In echtem Terrain-Setup würde man hier echte Terrain-Höhen abfragen
-        # Für jetzt: Placeholder für Future Genesis Terrain API
-        self.height_map.zero_()
-
     def _find_link_indices(self):
         def find_link_indices(names):
             return [
@@ -264,10 +282,9 @@ class Go2Env:
     def step(self, actions):
         self._process_actions(actions)
         self._update_robot_state()
-        # === NEU: Height Map aktualisieren ===
-        self._update_height_map()
         self._check_termination()
         self._compute_rewards()
+
 
         resample_ids = (self.episode_length_buf % self.resampling_time == 0).nonzero(as_tuple=False).flatten()
         if len(resample_ids) > 0:
@@ -333,6 +350,7 @@ class Go2Env:
         self._handle_timeouts()
         self.reset_idx(self.reset_buf.nonzero(as_tuple=False).flatten())
 
+
     def _handle_timeouts(self):
         time_out_idx = (self.episode_length_buf > self.max_episode_length).nonzero(as_tuple=False).flatten()
         self.extras["time_outs"] = torch.zeros_like(self.reset_buf, dtype=gs.tc_float)
@@ -360,13 +378,7 @@ class Go2Env:
             self.commands,                                                             
             self.base_pos - self.last_base_pos,                                       
         ]
-        
-        # === NEU: Height Map hinzufügen ===
-        if self.use_terrain and self.height_map is not None:
-            obs_list.append(
-                self.height_map.view(self.num_envs, -1) * self.obs_scales.get("height_map", 1.0)
-            )
-        
+        # Das Terrain-Zeug (obs_list.append(self.relative_heights)) ist weg!
         self.obs_buf = torch.clip(torch.cat(obs_list, dim=-1), -100.0, 100.0)
 
         if self.num_privileged_obs is not None:
@@ -382,13 +394,6 @@ class Go2Env:
                 self.commands,                                                         
                 self.base_pos - self.last_base_pos,                                   
             ]
-            
-            # === NEU: Height Map auch in privileged obs ===
-            if self.use_terrain and self.height_map is not None:
-                priv_list.append(
-                    self.height_map.view(self.num_envs, -1) * self.obs_scales.get("height_map", 1.0)
-                )
-            
             self.privileged_obs_buf = torch.clip(torch.cat(priv_list, dim=-1), -100.0, 100.0)
 
     def get_observations(self):
@@ -451,7 +456,7 @@ class Go2Env:
         return self.obs_buf, None
 
     # -------------------------------------------------------------------------
-    # Curriculum Learning
+    # Curriculum
     # -------------------------------------------------------------------------
 
     def increase_x_target(self, delta):
@@ -468,40 +473,6 @@ class Go2Env:
         if mean_tracking_reward > threshold:
             self.lin_vel_x_range[1] = min(self.lin_vel_x_range[1] + increment, final_max)
             print(f"Curriculum update → max forward vel = {self.lin_vel_x_range[1]:.2f} m/s")
-
-    # === NEU: Terrain Curriculum ===
-    def increase_terrain_difficulty(self):
-        """Erhöhe Terrain-Schwierigkeit graduell für Curriculum Learning."""
-        if not self.use_terrain:
-            return
-        
-        terrain_cfg = self.env_cfg.get('terrain_cfg', {})
-        current_scale = terrain_cfg.get('curriculum_vertical_scale', terrain_cfg.get('vertical_scale', 0.005))
-        max_scale = terrain_cfg.get('curriculum_max_vertical_scale', 0.05)
-        
-        # 20% Anstieg, aber mit maximum
-        new_scale = min(current_scale * 1.2, max_scale)
-        
-        # Update in config
-        self.env_cfg['terrain_cfg']['curriculum_vertical_scale'] = new_scale
-        
-        progress = 100 * (new_scale - 0.005) / (max_scale - 0.005) if max_scale > 0.005 else 0
-        print(f"\n{'='*60}")
-        print(f"🏔️  TERRAIN DIFFICULTY INCREASED")
-        print(f"   vertical_scale: {current_scale:.5f} → {new_scale:.5f}")
-        print(f"   Progress: {progress:.1f}%")
-        print(f"{'='*60}\n")
-
-    def update_terrain_curriculum(self, iteration, curriculum_interval=500):
-        """
-        Zentralisierte Terrain-Curriculum Control.
-        Wird vom OnPolicyRunner aufgerufen.
-        """
-        if not self.use_terrain:
-            return
-        
-        if iteration % curriculum_interval == 0 and iteration > 0:
-            self.increase_terrain_difficulty()
 
     # -------------------------------------------------------------------------
     # Camera / recording
