@@ -44,7 +44,7 @@ class Go2Env:
         self.num_actions: int         = env_cfg["num_actions"]
 
         self.simulate_action_latency: bool = True   # 1-step latency as on real robot
-        self.dt: float                     = 0.02   # 50 Hz control
+        self.dt: float                     = 0.02
         self.max_episode_length: int       = math.ceil(env_cfg["episode_length_s"] / self.dt)
 
         self.env_cfg      = env_cfg
@@ -74,7 +74,7 @@ class Go2Env:
 
     def _setup_scene(self, show_viewer):
         self.scene: Scene = gs.Scene(
-            sim_options=gs.options.SimOptions(dt=self.dt, substeps=10),
+            sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
             viewer_options=gs.options.ViewerOptions(
                 max_FPS=int(0.5 / self.dt),
                 camera_pos=(2.0, 0.0, 2.5),
@@ -85,8 +85,10 @@ class Go2Env:
             rigid_options=gs.options.RigidOptions(
                 dt=self.dt,
                 constraint_solver=gs.constraint_solver.Newton,
+                tolerance=1e-8,
                 enable_collision=True,
                 enable_joint_limit=True,
+                
             ),
             show_viewer=show_viewer,
         )
@@ -95,60 +97,71 @@ class Go2Env:
                 self.rigid_solver = solver
                 break
 
+
     def _add_terrain(self):
-        """Erzeugt das prozedurale Gelände basierend auf der Konfiguration."""
+        """Add terrain or plane to the scene"""
         if self.use_terrain:
-            # Holen der Parameter aus der train.py Config
-            terrain_cfg = self.env_cfg.get("terrain_cfg", {})
-            n_subterrains = terrain_cfg.get("n_subterrains", (8, 8))
-            subterrain_size = terrain_cfg.get("subterrain_size", (12.0, 12.0))
-            horizontal_scale = terrain_cfg.get("horizontal_scale", 0.25)
-            vertical_scale = terrain_cfg.get("vertical_scale", 0.005)
-            randomize = terrain_cfg.get("randomize", False)
-            
-            # Deine Liste aus train.py: ['flat_terrain', 'random_uniform_terrain', 'sloped_terrain']
-            types_pool = terrain_cfg.get("subterrain_types", ["flat_terrain"])
-            
-            # Wir bauen ein 2D-Grid (Matrix) für die n_subterrains auf
-            subterrain_types = []
-            for r in range(n_subterrains[0]):
-                row = []
-                for c in range(n_subterrains[1]):
-                    # Überprüfung, ob wir uns in den zentralen Spawn-Kacheln befinden.
-                    # Das hält die Start-Zone flach und verhindert Physik-Glitches beim Spawn.
-                    if abs(r - n_subterrains[0] // 2) <= 1 and abs(c - n_subterrains[1] // 2) <= 1:
-                        row.append("flat_terrain")
-                    else:
-                        # Zufällige Auswahl aus deinen definierten Terrain-Typen (nutzt np aus go2_env)
-                        row.append(np.random.choice(types_pool))
-                subterrain_types.append(row)
-
-            # Terrain zur Genesis-Szene hinzufügen
-            self.scene.add_entity(
-                morph=gs.morphs.Terrain(
-                    n_subterrains=n_subterrains,
-                    subterrain_size=subterrain_size,
-                    horizontal_scale=horizontal_scale,
-                    vertical_scale=vertical_scale,
-                    subterrain_types=subterrain_types,
-                    randomize=randomize,
-                )
-            )
-            print(f"[Genesis] Prozedurales Rough Terrain Grid ({n_subterrains[0]}x{n_subterrains[1]}) erfolgreich generiert.")
+            self._add_complex_terrain()
         else:
-            # Fallback auf die flache Standard-Ebene
-            self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
-            print("[Genesis] Standard flache Ebene geladen.")
+            self._add_simple_plane()
+            self.base_init_pos = torch.tensor(self.env_cfg["base_init_pos"], device=self.device)
 
-        # Startposition des Roboters definieren
-        center_x = (n_subterrains[0] * subterrain_size[0]) / 2.0
-        center_y = (n_subterrains[1] * subterrain_size[1]) / 2.0
+    def _add_complex_terrain(self):
+        """Add complex terrain with height field"""
+        self.terrain_cfg = self.env_cfg['terrain_cfg']
+        self.terrain = self.scene.add_entity(
+            gs.morphs.Terrain(
+                n_subterrains=self.terrain_cfg['n_subterrains'],
+                horizontal_scale=self.terrain_cfg['horizontal_scale'],
+                vertical_scale=self.terrain_cfg['vertical_scale'],
+                subterrain_size=self.terrain_cfg['subterrain_size'],
+                subterrain_types=self.terrain_cfg['subterrain_types'],
+                randomize=self.terrain_cfg.get('randomize', False),
+            ),
+        )
         
-        # Start-Höhe aus deiner Config (0.42) beibehalten
-        z_height = self.env_cfg.get("base_init_pos", [0.0, 0.0, 0.42])[2]
+        terrain_margin_x = self.terrain_cfg['n_subterrains'][0] * self.terrain_cfg['subterrain_size'][0]
+        terrain_margin_y = self.terrain_cfg['n_subterrains'][1] * self.terrain_cfg['subterrain_size'][1]
+        self.terrain_margin = torch.tensor(
+            [terrain_margin_x, terrain_margin_y], device=self.device, dtype=gs.tc_float
+        )
         
-        # Setze die Startposition fest auf die berechnete Mitte
-        self.base_init_pos = torch.tensor([center_x, center_y, z_height], device=self.device)  
+        height_field = self.terrain.geoms[0].metadata["height_field"]
+        self.height_field = torch.tensor(
+            height_field, device=self.device, dtype=gs.tc_float
+        ) * self.terrain_cfg['vertical_scale']
+        y_start = (self.terrain_cfg['n_subterrains'][1] * self.terrain_cfg['subterrain_size'][1]) / 2
+
+        if self.terrain_cfg.get('randomize', False):
+            x_start = (self.terrain_cfg['subterrain_size'][0]) / 2 #start at middle of first terrain 
+            self.base_init_pos = torch.tensor([x_start, y_start, 0.45], device=self.device)
+        else: 
+            self.base_init_pos = torch.tensor([0.30, y_start, 0.35], device=self.device) # start at the beginning of the terrain(x starts at 0 but we add small margin, 0.35 is approx the height of the robot)
+
+        self.height_patch_n_x = 5
+        self.height_patch_n_y = 5
+        self.height_patch_step_x = 0.4
+        self.height_patch_step_y = 0.4
+        self.height_patch_n_points = self.height_patch_n_x * self.height_patch_n_y
+
+        local_positions = []
+        for i in range(self.height_patch_n_x):
+            x = i * self.height_patch_step_x
+            for j in range(self.height_patch_n_y):
+                y = -((self.height_patch_n_y - 1) * self.height_patch_step_y) / 2 + j * self.height_patch_step_y
+                local_positions.append([x, y, 0])
+        self.height_patch_local_positions = torch.tensor(
+            local_positions, device=self.device, dtype=gs.tc_float
+        )
+
+        self.num_obs += self.height_patch_n_points
+        if self.num_privileged_obs is not None:
+            self.num_privileged_obs += self.height_patch_n_points
+        
+        self.relative_heights = torch.zeros((self.num_envs, self.height_patch_n_points), device=self.device, dtype=gs.tc_float) # init here
+        self.reset_environment_at_random_terrain = self.terrain_cfg.get('reset_environment_at_random_terrain', False)
+        # self.target_increased: bool = False # flag to indicate if the target has been increased in the curriculum learning
+
 
     def _add_simple_plane(self):
         self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
@@ -285,6 +298,9 @@ class Go2Env:
         self._check_termination()
         self._compute_rewards()
 
+        # KORREKTUR: Berechne die Terrain-Höhen vor den Observations!
+        if self.use_terrain:
+            self._compute_relative_heights()
 
         resample_ids = (self.episode_length_buf % self.resampling_time == 0).nonzero(as_tuple=False).flatten()
         if len(resample_ids) > 0:
@@ -299,7 +315,7 @@ class Go2Env:
         self.last_dof_vel[:]      = self.dof_vel[:]
 
         return self.obs_buf, self.privileged_obs_buf, self.rew_buf, self.reset_buf, self.extras
-
+    
     def _process_actions(self, actions):
         self.actions = torch.clip(actions, -self.env_cfg["clip_actions"], self.env_cfg["clip_actions"])
         exec_actions = self.last_actions if self.simulate_action_latency else self.actions
@@ -363,6 +379,35 @@ class Go2Env:
             self.rew_buf          += rew
             self.episode_sums[name] += rew
 
+    def _compute_relative_heights(self) -> None:
+        """Compute heights relative to the base of the robot for the height field patch in front of the robot."""
+        local_positions = self.height_patch_local_positions.unsqueeze(0).repeat(self.num_envs, 1, 1)
+        base_quat_repeated = self.base_quat.unsqueeze(1).repeat(1, 25, 1)
+
+        base_quat_flat = base_quat_repeated.view(-1, 4)
+        local_positions_flat = local_positions.view(-1, 3)
+
+        rotated_positions_flat = transform_by_quat(local_positions_flat, base_quat_flat)
+        rotated_positions = rotated_positions_flat.view(self.num_envs, 25, 3)
+        world_positions = self.base_pos.unsqueeze(1) + rotated_positions
+
+        clipped_positions = world_positions[:, :, :2].clamp(
+            min=torch.zeros(2, device=self.device),
+            max=self.terrain_margin
+        )
+
+        grid_indices = (clipped_positions / self.terrain_cfg['horizontal_scale'] - 0.5).floor().int()
+        width, height = self.height_field.shape
+
+        grid_indices[:, :, 0] = torch.clamp(grid_indices[:, :, 0], 0, width - 1)
+        grid_indices[:, :, 1] = torch.clamp(grid_indices[:, :, 1], 0, height - 1)
+
+        grid_x = grid_indices[:, :, 0]
+        grid_y = grid_indices[:, :, 1]
+
+        heights = self.height_field[grid_x, grid_y]
+        self.relative_heights = heights - self.base_pos[:, 2].unsqueeze(1)
+
     # -------------------------------------------------------------------------
     # Observations
     # -------------------------------------------------------------------------
@@ -378,7 +423,11 @@ class Go2Env:
             self.commands,                                                             
             self.base_pos - self.last_base_pos,                                       
         ]
-        # Das Terrain-Zeug (obs_list.append(self.relative_heights)) ist weg!
+        
+        # KORREKTUR: Hänge die Höhenkarte wieder an den Input an!
+        if self.use_terrain:
+            obs_list.append(self.relative_heights)
+            
         self.obs_buf = torch.clip(torch.cat(obs_list, dim=-1), -100.0, 100.0)
 
         if self.num_privileged_obs is not None:
@@ -394,7 +443,13 @@ class Go2Env:
                 self.commands,                                                         
                 self.base_pos - self.last_base_pos,                                   
             ]
+            
+            # Auch für das Critic-Netzwerk anhängen
+            if self.use_terrain:
+                priv_list.append(self.relative_heights)
+                
             self.privileged_obs_buf = torch.clip(torch.cat(priv_list, dim=-1), -100.0, 100.0)
+
 
     def get_observations(self):
         return self.obs_buf

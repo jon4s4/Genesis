@@ -4,7 +4,7 @@ import torch
 class SprintFlatTerrain(Go2Env):
 
     # ------------------------------------------------------------------
-    # 1. Hauptziel: Geschwindigkeit & Richtung
+    # 1. Hauptziel: Geschwindigkeit
     # ------------------------------------------------------------------
 
     def _reward_tracking_lin_vel_x(self):
@@ -12,145 +12,149 @@ class SprintFlatTerrain(Go2Env):
         error = torch.square(self.commands[:, 0] - self.base_lin_vel[:, 0])
         return torch.exp(-error / self.reward_cfg["tracking_sigma"])
 
-
-    def _reward_paper_velocity(self):
-        error = torch.abs(self.commands[:, 0] - self.base_lin_vel[:, 0])
-        # Wenn der Fehler größer als 1.0 ist, gibt es 0 Reward, aber keine Bestrafung!
-        return torch.clamp(1.0 - error, min=0.0)
-
-    def _reward_paper_energy_penalty(self):
-        """
-        Energy penalty: |tau * q_dot|
-        Bestraft die erbrachte mechanische Leistung (Drehmoment * Winkelgeschwindigkeit).
-        Das Integral über die Zeit wird hier durch den diskreten Zeitschritt (und den Faktor in der Config) abgebildet.
-        """
-        power = torch.abs(self.torques * self.dof_vel)
-        return torch.sum(power, dim=1)
-
-    def _reward_paper_orientation(self):
-        """
-        Orientation penalty: ||q - (1, 0, 0, 0)||
-        Bestraft Abweichungen von der neutralen Rotation.
-        Hinweis: Genesis nutzt Quaternions im Format [w, x, y, z]. 
-        Die aufrechte Position ist [1.0, 0.0, 0.0, 0.0].
-        """
-        target_quat = torch.tensor([1.0, 0.0, 0.0, 0.0], device=self.device)
-        # L2-Norm (Euklidische Distanz) zwischen der aktuellen und der Ziel-Quaternion
-        return torch.norm(self.base_quat - target_quat, dim=1)
-
-    def _reward_paper_lateral_drift(self):
-        """
-        Lateral drift penalty: |y|
-        Bestraft absolute seitliche Abweichung vom Startpunkt.
-        """
-        return torch.abs(self.base_pos[:, 1] - self.base_init_pos[1])
-
-
-    def _reward_lin_vel_y(self):
-        """Bestraft seitliches Abdriften (besser als absolute Positionsbestrafung)."""
-        return torch.square(self.base_lin_vel[:, 1])
-    
-
-    
-    def _reward_feet_air_time(self):
-        contact = self.feet_contact                         # (num_envs, 4) bool
-        first_contact = (self.feet_air_time > 0) & contact
-        self.feet_air_time += self.dt
-
-        target_air_time = 0.18 + 0.2 * torch.abs(
-            self.commands[:, 0]
-        ).unsqueeze(1)  # längere Flugzeit bei höherer Zielgeschwindigkeit
-
-        # POSITIVER Reward: je länger der Fuß in der Luft war (bis zum Ziel), desto besser
-        reward = torch.sum(
-            self.feet_air_time.clip(max=target_air_time) * first_contact.float(),
-            dim=1,
-        )
-        # Nur aktiv wenn Vorwärtsbewegung gewünscht
-        reward *= (torch.abs(self.commands[:, 0]) > 0.1).float()
-        self.feet_air_time *= (~contact).float()            # Reset bei Touchdown
-        return reward
-    
-
-    def _reward_penalized_contact(self):
-        """Bestraft Bodenkontakt von allem, was kein Fuß ist (Oberschenkel, Unterschenkel, Torso)."""
-        penalized_forces = self.link_contact_forces[:, self.penalized_contact_link_indices, :]
-        return torch.sum((torch.norm(penalized_forces, dim=-1) > 0.1).float(), dim=1)
-
-
     def _reward_tracking_ang_vel(self):
         """Belohnt das Einhalten der gewünschten Drehgeschwindigkeit (Gieren/Yaw)."""
         error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
         return torch.exp(-error / self.reward_cfg["tracking_sigma"])
 
     # ------------------------------------------------------------------
-    # 2. Stabilität & Haltung (Sollte mit negativen Gewichten versehen werden)
+    # 2. Stabilität (TERRAIN-ANGEPASST)
     # ------------------------------------------------------------------
 
+    def _reward_lin_vel_y(self):
+        """Bestraft seitliches Abdriften."""
+        return torch.square(self.base_lin_vel[:, 1])
+
     def _reward_lin_vel_z(self):
-        """Bestraft vertikales Hüpfen des Torsos — wichtig für effizientes Rennen."""
+        """
+        Bestraft vertikales Hüpfen.
+        AUF TERRAIN schwächer gewichten als auf flachem Boden,
+        da der Roboter bei Steigungen zwangsläufig vertikal beschleunigt!
+        Empfohlen: -0.5 statt -2.0
+        """
         return torch.square(self.base_lin_vel[:, 2])
 
-
     def _reward_ang_vel_xy(self):
-        """Bestraft Nicken (Pitch) und Rollen (Roll) des Torsos."""
+        """
+        Bestraft Nicken (Pitch) und Rollen (Roll).
+        AUF TERRAIN leicht lockerer, da Steigungen Roll/Pitch erfordern.
+        Empfohlen: -0.05 statt -0.1
+        """
         return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
 
     def _reward_orientation(self):
-        """Bestraft eine geneigte Basis (Körper sollte waagerecht bleiben)."""
+        """
+        Bestraft Neigung via projected gravity.
+        Besser als paper_orientation auf Terrain: toleriert Steigungen automatisch,
+        weil der Gravitationsvektor im Körperframe bei echtem Aufrichten stabil bleibt.
+        Empfohlen: -1.0
+        """
         return torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
 
+    def _reward_base_height(self):
+        """
+        AUF TERRAIN: Relative Höhe über dem Boden statt absoluter Höhe!
+
+        Nutzt den mittleren Height-Map-Patch direkt unter dem Roboter.
+        Ziel: ~0.34m über dem Boden (normale Stand-Höhe des Go2).
+        """
+        if self.use_terrain:
+            # Mittlerer Patch in der 3x3 Grid = Index 4
+            center_idx = (self.height_patch_n_x // 2) * self.height_patch_n_y + (self.height_patch_n_y // 2)
+            # relative_heights[i, j] = terrain_height - base_pos.z  → negativ wenn Roboter über dem Boden
+            height_above_ground = -self.relative_heights[:, center_idx]
+            target_height = 0.34
+            return torch.abs(height_above_ground - target_height)
+        else:
+            return torch.abs(self.base_pos[:, 2] - 0.34)
+
     # ------------------------------------------------------------------
-    # 3. Energie & Geschmeidigkeit (Kleine negative Gewichte!)
+    # 3. Energie & Geschmeidigkeit
     # ------------------------------------------------------------------
 
     def _reward_action_rate(self):
-        """Bestraft ruckartige Gelenkbewegungen von einem Step zum nächsten."""
+        """
+        Bestraft ruckartige Gelenkbewegungen.
+        AUF TERRAIN wichtiger: Roboter neigt zu hektischen Korrekturen.
+        Empfohlen: -0.01 statt -0.005
+        """
         return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
 
     def _reward_smoothness(self):
-        """Bestraft abrupte Beschleunigungsänderungen in den Gelenken (Jerk)."""
+        """Bestraft Jerk (Beschleunigungsänderung)."""
         return torch.sum(
             torch.square(self.actions - 2.0 * self.last_actions + self.last_last_actions), dim=1
         )
 
     def _reward_torques(self):
-        """Bestraft zu hohen Drehmomentverbrauch (fördert Energieeffizienz)."""
+        """
+        Bestraft Drehmomentverbrauch.
+        AUF TERRAIN: Roboter braucht mehr Kraft → schwächer gewichten.
+        Empfohlen: -0.0001 statt -0.0002
+        """
         return torch.sum(torch.square(self.torques), dim=1)
-
+    
+    def _reward_similar_to_default(self):
+        # Penalize joint poses far away from default pose
+        return torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1)
+    
+    def _reward_sideway_movement(self):
+        # Penalize sideway movement away from the starting point
+        return torch.clamp(torch.abs(self.base_pos[:, 1] - self.base_init_pos[1]), max=2)
     # ------------------------------------------------------------------
-    # 4. Füße & Kontakt (Entscheidend für Trab/Galopp)
+    # 4. Füße & Kontakt
     # ------------------------------------------------------------------
 
+    def _reward_feet_air_time(self):
+        """
+        Belohnt optimalen Schrittrhythmus.
+        AUF TERRAIN: Kürzere Ziel-Flugzeit als auf flat terrain.
+        """
+        contact = self.feet_contact
+        first_contact = (self.feet_air_time > 0) & contact
+        self.feet_air_time += self.dt
+
+        # AUF TERRAIN: 0.12 statt 0.18 als Basis
+        target_air_time = 0.12 + 0.15 * torch.abs(
+            self.commands[:, 0]
+        ).unsqueeze(1)
+
+        reward = torch.sum(
+            self.feet_air_time.clip(max=target_air_time) * first_contact.float(),
+            dim=1,
+        )
+        reward *= (torch.abs(self.commands[:, 0]) > 0.1).float()
+        self.feet_air_time *= (~contact).float()
+        return reward
 
     def _reward_feet_slip(self):
-        """Bestraft das Rutschen der Füße auf dem Boden."""
-        contact = self.feet_contact.float() # (num_envs, 4)
-        feet_xy_speed = torch.norm(self.foot_velocities[:, :, :2], dim=-1)  # (num_envs, 4)
+        """
+        Bestraft Fuß-Rutschen.
+        AUF TERRAIN sehr wichtig: schlechte Traktion führt zu Instabilität.
+        Empfohlen: -0.1 (stärker als auf flat)
+        """
+        contact = self.feet_contact.float()
+        feet_xy_speed = torch.norm(self.foot_velocities[:, :, :2], dim=-1)
         return torch.sum(feet_xy_speed * contact, dim=1)
 
+    def _reward_penalized_contact(self):
+        """
+        Bestraft unerwünschte Kollisionen (Oberschenkel, Unterschenkel, Torso).
+        AUF TERRAIN wichtiger als auf flat!
+        Empfohlen: -1.0
+        """
+        penalized_forces = self.link_contact_forces[:, self.penalized_contact_link_indices, :]
+        return torch.sum((torch.norm(penalized_forces, dim=-1) > 0.1).float(), dim=1)
 
     # ------------------------------------------------------------------
-    # 5. Überleben & Bestrafung bei Sturz
+    # 5. Überleben & Sturz
     # ------------------------------------------------------------------
 
     def _reward_alive(self):
-        """Gibt einen kleinen Bonus für jeden überlebten Step (hält den Roboter am Anfang aufrecht)."""
+        """Bonus für jeden überlebten Step."""
         return (~self.reset_buf.bool()).float()
 
     def _reward_termination(self):
-        """Gibt eine dicke Strafe, wenn der Roboter umfällt (nicht bei Timeouts!)."""
+        """Strafe bei Sturz (nicht bei Timeout)."""
         non_timeout_reset = (self.reset_buf == 1) & (self.episode_length_buf <= self.max_episode_length)
         return non_timeout_reset.float()
-    
-    # ==================================================================
-    # Paper-Based Rewards (L1-Norms & Absolute Werte)
-    # ==================================================================
-
-
-    def _reward_paper_height(self):
-        """
-        Height penalty: |z - 0.3|
-        Zwingt den Roboter, den Rumpf exakt auf 30 cm Höhe zu halten.
-        """
-        return torch.abs(self.base_pos[:, 2] - 0.3)

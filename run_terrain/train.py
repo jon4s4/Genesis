@@ -20,12 +20,12 @@ def get_train_cfg(exp_name, max_iterations):
         "algorithm": {
             "clip_param": 0.2, # control how much the policy is allowed to change at each update step (increase => faster learning but riskier, decrease => slower but more stable)
             "desired_kl": 0.01, # how much change do I want between the old and new policy (using an adaptive schedule in this implementation)
-            "entropy_coef": 0.001, # rewards randomness in action selection (might make sense to set it higher in early training and lower it later)
+            "entropy_coef": 0.01, # rewards randomness in action selection (might make sense to set it higher in early training and lower it later)
             "gamma": 0.99, # determines how much agent values future rewards 
             "lam": 0.95, # lambda parameter for GAE (Generalized Advantage Estimation); higher means advantages depend more on long-term returns, lower means more on short-term returns
             "learning_rate": 0.001, # is adaptive 
             "max_grad_norm": 1.0, # gradient clipping (to prevent exploding gradients)
-            "num_learning_epochs": 5, # how often do we reuse one rollout batch 
+            "num_learning_epochs": 4, # how often do we reuse one rollout batch 
             "num_mini_batches":4, # how many chunks the data is split into during training ((num_envs * num_steps_per_env) / num_mini_batches) 
             "schedule": "adaptive",
             "use_clipped_value_loss": True,
@@ -102,23 +102,23 @@ def get_cfgs():
         "kp": 40.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
         "kd": 1.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
-        "termination_if_roll_greater_than": 45,  # degree
-        "termination_if_pitch_greater_than": 45,  # degree
+        "termination_if_roll_greater_than": 20,  # degree
+        "termination_if_pitch_greater_than": 30,  # degree
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-        "episode_length_s":8.0,
+        "episode_length_s":20.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
         "action_scale": 0.5, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
         "clip_actions": 1.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
         'use_terrain': True,
         'terrain_cfg': {
-            'subterrain_types': ['flat_terrain', 'random_uniform_terrain', 'sloped_terrain'], 
-            'n_subterrains': (8, 1),
-            'subterrain_size': (25.0, 12.0),
+            'subterrain_types': "fractal_terrain",
+            'n_subterrains': (3, 1),
+            'subterrain_size': (12.0, 12.0),
             'horizontal_scale': 0.25, # determines the number of scales per tile, so here 12/0.25 = 48 per tile
             'vertical_scale': 0.005,
-            'randomize': False,
+            'randomize': True,
             'reset_environment_at_random_terrain': False, # whether to reset the environment at a random terrain
         },
         'termination_contact_link_names': ['base'],
@@ -139,22 +139,24 @@ def get_cfgs():
     }
 
     reward_cfg = {
-        "tracking_sigma": 0.3,
+        "tracking_sigma": 0.30, 
         "reward_scales": {
-            "tracking_lin_vel_x":  2.0,
-            "lin_vel_y":          -0.1,
-            "paper_lateral_drift":    -0.4,
-            "paper_height":           -50.0,
-            "tracking_ang_vel":    	0.4,
-            "action_rate":        	-0.005,
-            "lin_vel_z":          	-2.0,
+            "tracking_lin_vel_x": 1.0,
+            "tracking_ang_vel": 1.0,
+            "lin_vel_z": -1.0,
+            "lin_vel_y": -5.0,
+            "action_rate": -0.005,
+            "similar_to_default": -0.1, # TODO: Maybe remove this as for high speeds the joint angles will be very different from the default angles
+            # "termination": -10.0
+            "sideway_movement": -1.0,
+            # "x_progress": 1.0, # reward for moving forward in the x direction
         },
     }
 
     command_cfg = {
         "num_commands": 3,
         # Geschwindigkeitsbereich statt fester Werte
-        "lin_vel_x_range": [0.5, 2.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
+        "lin_vel_x_range": [0.3, 2.0],      # min/max Vorwärtsgeschwindigkeit (m/s)
         "lin_vel_y_range": [-0.0, 0.0],     # seitliche Geschwindigkeit
         "ang_vel_range": [-0.0, 0.0],       # Drehgeschwindigkeit (rad/s)
         "resampling_time_s": 4.0,           # alle 4s neue Zielgeschwindigkeit
@@ -197,7 +199,7 @@ def main():
     runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda", curriculum=train_cfg["runner"]["curriculum"], delta=train_cfg["runner"]["curriculum_delta"], curriculum_threshold=train_cfg["runner"]["curriculum_threshold"])
 
     if args.resume is not None:
-        resume_dir = f'logs/{args.resume}'
+        resume_dir = f'logs_flat_terrain/{args.resume}'
         resume_path = os.path.join(resume_dir, f'model_{args.ckpt}.pt')
         print('==> resume training from', resume_path)
         runner.load(resume_path)
