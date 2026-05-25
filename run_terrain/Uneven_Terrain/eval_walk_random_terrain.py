@@ -1,9 +1,12 @@
 import argparse
 import os
 import pickle
+import genesis as gs
+gs.init()
+
 import torch
 from rsl_rl.runners import OnPolicyRunner
-import genesis as gs
+
 from simple_reward_wrapper import WalkRandomTerrain
 
 def main():
@@ -13,10 +16,8 @@ def main():
     parser.add_argument("--ckpt", type=int, default=100)
     args = parser.parse_args()
 
-    gs.init()
-
-    log_dir = f"logs/{args.exp_name}"
-    env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = pickle.load(open(f"logs/{args.exp_name}/cfgs.pkl", "rb"))
+    log_dir = f"fourth_try/logs/{args.exp_name}"
+    env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = pickle.load(open(f"fourth_try/logs/{args.exp_name}/cfgs.pkl", "rb"))
     reward_cfg["reward_scales"] = {}
     env_cfg["terrain_cfg"]["randomize"]=False
     # Here you can modify the terrain configuration to test different terrains
@@ -31,10 +32,10 @@ def main():
         show_viewer=False,
         eval=True
     )
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device='cuda:0')
+    runner = OnPolicyRunner(env, train_cfg, log_dir, device='mps')
     resume_path = os.path.join(log_dir, f"model_{args.ckpt}.pt")
     runner.load(resume_path)
-    policy = runner.get_inference_policy(device="cuda:0")
+    policy = runner.get_inference_policy(device="mps")
 
     ### recording ###
     env.reset()
@@ -61,6 +62,6 @@ if __name__ == "__main__":
     main()
 
 """
-python eval_walk_random_terrain.py -e go2-fractal-adaptive-curriculum-big-smaller-threshold-manual-increase -r --ckpt 2800
+python eval_walk_random_terrain.py -e test -r --ckpt 2000
 python eval_walk_random_terrain.py -e tesuto -r --ckpt 312
 """

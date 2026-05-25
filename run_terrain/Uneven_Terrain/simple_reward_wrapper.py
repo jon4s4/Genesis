@@ -43,27 +43,3 @@ class WalkRandomTerrain(Go2Env):
     def _reward_x_progress(self):
         # Reward for moving forward (to prevent model from standing still)
         return torch.clamp(self.base_pos[:, 0] - self.base_init_pos[0], max=1)
-    
-    def _reward_paper_lateral_drift(self):
-        """
-        Lateral drift penalty: |y|
-        Bestraft absolute seitliche Abweichung vom Startpunkt.
-        """
-        return torch.abs(self.base_pos[:, 1] - self.base_init_pos[1])
-    
-    def _reward_base_height(self):
-        """
-        AUF TERRAIN: Relative Höhe über dem Boden statt absoluter Höhe!
-
-        Nutzt den mittleren Height-Map-Patch direkt unter dem Roboter.
-        Ziel: ~0.34m über dem Boden (normale Stand-Höhe des Go2).
-        """
-        if self.use_terrain:
-            # Mittlerer Patch in der 3x3 Grid = Index 4
-            center_idx = (self.height_patch_n_x // 2) * self.height_patch_n_y + (self.height_patch_n_y // 2)
-            # relative_heights[i, j] = terrain_height - base_pos.z  → negativ wenn Roboter über dem Boden
-            height_above_ground = -self.relative_heights[:, center_idx]
-            target_height = 0.34
-            return torch.abs(height_above_ground - target_height)
-        else:
-            return torch.abs(self.base_pos[:, 2] - 0.34)

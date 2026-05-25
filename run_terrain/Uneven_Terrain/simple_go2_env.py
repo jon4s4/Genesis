@@ -13,8 +13,8 @@ def gs_rand_float(lower, upper, shape, device):
 
 
 class Go2Env:
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, device="cuda", eval=False):
-        self.device = torch.device(device)
+    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, eval=False):
+        self.device = torch.device(gs.device)
         self.show_viewer = show_viewer
         self.eval = eval
         self.num_frames = 1993 if self.eval else 241 #save shorter clips during training and longer clips during evaluation
@@ -594,7 +594,7 @@ class Go2Env:
 
     def increase_x_target(self, delta):
         """Increase the x target velocity by delta"""
-        mask: torch.Tensor = self.commands[:, 0] < 5.0 # mask to select environments where the x target velocity is less than 2.5
+        mask: torch.Tensor = self.commands[:, 0] < 10.0 # mask to select environments where the x target velocity is less than 2.5
         self.commands[mask, 0] += delta
         # self.target_increased = True # set the flag to indicate that the target has been increased
         print("Increased x target velocity by", delta)
