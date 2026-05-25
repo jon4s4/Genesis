@@ -162,7 +162,7 @@ def get_cfgs():
             "tracking_lin_vel_x": 4.0,
             "tracking_ang_vel": 1.0,
             "lin_vel_z": -1.0,
-            "lin_vel_y": -5.0,
+            "lin_vel_y": -1.0,
             "action_rate": -0.005,
             "feet_air_time": 0.2,
            # "similar_to_default": -0.1, # TODO: Maybe remove this as for high speeds the joint angles will be very different from the default angles

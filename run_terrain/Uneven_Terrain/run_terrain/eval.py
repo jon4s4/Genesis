@@ -23,7 +23,7 @@ def main():
     args = parser.parse_args()
 
 
-    log_dir = f"fourth_try/logs/{args.exp_name}"
+    log_dir = f"run_terrain/logs/{args.exp_name}"
     env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = pickle.load(
         open(f"{log_dir}/cfgs.pkl", "rb")
     )

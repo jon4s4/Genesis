@@ -13,8 +13,8 @@ def gs_rand_float(lower, upper, shape, device):
 
 
 class Go2Env:
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, device="cuda", eval=False):
-        self.device = torch.device(device)
+    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, eval=False):
+        self.device = torch.device(gs.device)
         self.show_viewer = show_viewer
         self.eval = eval
         self.num_frames = 1993 if self.eval else 241 #save shorter clips during training and longer clips during evaluation
@@ -83,6 +83,15 @@ class Go2Env:
         self._recording: bool = False
         self._recorded_frames_behind: list = []
         self._recorded_frames_side: list = []
+
+
+    def _initialize_feet_buffers(self):
+        self.foot_positions   = torch.zeros((self.num_envs, 4, 3), device=self.device, dtype=gs.tc_float)
+        self.foot_quaternions = torch.zeros((self.num_envs, 4, 4), device=self.device, dtype=gs.tc_float)
+        self.foot_velocities  = torch.zeros((self.num_envs, 4, 3), device=self.device, dtype=gs.tc_float)
+        # Boolean contact mask and cumulative air-time
+        self.feet_contact  = torch.zeros((self.num_envs, 4), device=self.device, dtype=torch.bool)
+        self.feet_air_time = torch.zeros((self.num_envs, 4), device=self.device, dtype=gs.tc_float)
 
     def _setup_scene(self, show_viewer):
         """Set up the simulation scene with appropriate options"""
@@ -280,18 +289,6 @@ class Go2Env:
         height_field_ids.clamp(min=0)
         self.terrain_heights = self.height_field[height_field_ids[:, 0], height_field_ids[:, 1]]
 
-    def _initialize_feet_buffers(self):
-        """Initialize buffers for foot positions, orientations, and velocities"""
-        self.foot_positions = torch.ones(
-            self.num_envs, 4, 3, device=self.device, dtype=gs.tc_float,
-        ) #not used for now
-        self.foot_quaternions = torch.ones(
-            self.num_envs, 4, 4, device=self.device, dtype=gs.tc_float,
-        )# not used for now
-        self.foot_velocities = torch.ones(
-            self.num_envs, 4, 3, device=self.device, dtype=gs.tc_float,
-        )
-
     def _find_link_indices(self):
         """Find indices of important links like feet, contact points, etc."""
         def find_link_indices(names):
@@ -377,6 +374,10 @@ class Go2Env:
             device=self.device,
             dtype=gs.tc_float,
         )# net force applied on each links due to direct external contacts, shape (num_envs, num_links, 3)
+        
+        self.feet_contact = (
+            torch.norm(self.link_contact_forces[:, self.feet_link_indices, :], dim=-1) > 1.0
+        )  # shape: (num_envs, 4)
 
     def _check_termination(self):
         """Check termination conditions and reset environments if needed"""
@@ -573,6 +574,7 @@ class Go2Env:
         self.last_actions[envs_idx] = 0.0
         self.last_dof_vel[envs_idx] = 0.0
         self.episode_length_buf[envs_idx] = 0
+        self.feet_air_time[envs_idx]      = 0.0
         self.reset_buf[envs_idx] = True
 
     def _update_episode_stats(self, envs_idx):
@@ -594,7 +596,7 @@ class Go2Env:
 
     def increase_x_target(self, delta):
         """Increase the x target velocity by delta"""
-        mask: torch.Tensor = self.commands[:, 0] < 5.0 # mask to select environments where the x target velocity is less than 2.5
+        mask: torch.Tensor = self.commands[:, 0] < 10.0 # mask to select environments where the x target velocity is less than 2.5
         self.commands[mask, 0] += delta
         # self.target_increased = True # set the flag to indicate that the target has been increased
         print("Increased x target velocity by", delta)

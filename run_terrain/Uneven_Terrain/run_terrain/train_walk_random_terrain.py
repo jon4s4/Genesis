@@ -118,8 +118,8 @@ def get_cfgs():
             "RL_calf_joint",
         ],
         # PD
-        "kp": 40.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
-        "kd": 1.5, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
+        "kp": 50.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
+        "kd": 1.4, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
         "termination_if_roll_greater_than": 20,  # degree
         "termination_if_pitch_greater_than": 30,  # degree
@@ -159,12 +159,12 @@ def get_cfgs():
     reward_cfg = {
         "tracking_sigma": 0.30, 
         "reward_scales": {
-            "tracking_lin_vel_x": 4.0,
+            "tracking_lin_vel_x": 5.0,
             "tracking_ang_vel": 1.0,
             "lin_vel_z": -1.0,
-            "lin_vel_y": -5.0,
+            "lin_vel_y": -1.0,
             "action_rate": -0.005,
-            "feet_air_time": 0.2,
+            "feet_air_time": 0.1,
            # "similar_to_default": -0.1, # TODO: Maybe remove this as for high speeds the joint angles will be very different from the default angles
             # "termination": -10.0
             # "x_progress": 1.0, # reward for moving forward in the x direction
