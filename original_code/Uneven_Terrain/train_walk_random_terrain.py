@@ -4,12 +4,10 @@ import os
 import pickle
 import shutil
 
-import genesis as gs
-gs.init(logging_level="warning")
-
 import wandb
 from simple_reward_wrapper import WalkRandomTerrain
 from rsl_rl.runners import OnPolicyRunner
+import genesis as gs
 import random
 
 
@@ -118,8 +116,8 @@ def get_cfgs():
             "RL_calf_joint",
         ],
         # PD
-        "kp": 40.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
-        "kd": 1.5, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
+        "kp": 20.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
+        "kd": 1.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
         "termination_if_roll_greater_than": 20,  # degree
         "termination_if_pitch_greater_than": 30,  # degree
@@ -127,9 +125,9 @@ def get_cfgs():
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s":40.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
-        "action_scale": 0.3, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
+        "action_scale": 0.25, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
-        "clip_actions": 1.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
+        "clip_actions": 100.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
         'use_terrain': True,
         'terrain_cfg': {
             'subterrain_types': 'fractal_terrain', #create_random_terrains(), # 5x5 grid of random subterrain types that each start with flat terrain
@@ -147,7 +145,7 @@ def get_cfgs():
     }
 
     obs_cfg = {
-        "num_obs": 51,
+        "num_obs": 48,
         "num_priviliged_obs": 72,
         "obs_scales": {
             "lin_vel": 2.0,
@@ -159,23 +157,22 @@ def get_cfgs():
     reward_cfg = {
         "tracking_sigma": 0.30, 
         "reward_scales": {
-            "tracking_lin_vel_x": 4.0,
+            "tracking_lin_vel_x": 1.0,
             "tracking_ang_vel": 1.0,
             "lin_vel_z": -1.0,
             "lin_vel_y": -5.0,
             "action_rate": -0.005,
-            "feet_air_time": 0.2,
-           # "similar_to_default": -0.1, # TODO: Maybe remove this as for high speeds the joint angles will be very different from the default angles
+            "similar_to_default": -0.1, # TODO: Maybe remove this as for high speeds the joint angles will be very different from the default angles
             # "termination": -10.0
+            "sideway_movement": -1.0,
             # "x_progress": 1.0, # reward for moving forward in the x direction
         },
     }
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x_range": [0.5, 6.0],  # Intervall für Vorwärts (nicht bei 0 starten!)
-        "lin_vel_y_range": [-0.0, 0.0], # Seitwärts erstmal blockieren
-        "ang_vel_range": [-0.0, 0.0],   # Drehung erstmal blockieren
-        "resampling_time_s": 4.0,       # Alle 4 Sekunden neues Kommando
+        "lin_vel_x_target": 0.6,
+        "lin_vel_y_target": 0.0,
+        "ang_vel_target": 0.0,
     }
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
@@ -188,6 +185,8 @@ def main():
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument('--ckpt', type=int, default=1000)
     args = parser.parse_args()
+
+    gs.init(backend=gs.gpu, logging_level="warning")
 
     log_dir = f"logs/{args.exp_name}"
     env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
@@ -212,7 +211,7 @@ def main():
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg,
     )
 
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda", curriculum=train_cfg["runner"]["curriculum"], delta=train_cfg["runner"]["curriculum_delta"], curriculum_threshold=train_cfg["runner"]["curriculum_threshold"])
+    runner = OnPolicyRunner(env, train_cfg, log_dir, device="mps", curriculum=train_cfg["runner"]["curriculum"], delta=train_cfg["runner"]["curriculum_delta"], curriculum_threshold=train_cfg["runner"]["curriculum_threshold"])
 
     if args.resume is not None:
         resume_dir = f'logs/{args.resume}'

@@ -3,18 +3,14 @@ import math
 import numpy as np
 import genesis as gs
 from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
-from genesis.engine.entities.rigid_entity import RigidEntity
-from genesis.engine.scene import Scene
-from genesis.engine.solvers import RigidSolver
-
 
 def gs_rand_float(lower, upper, shape, device):
     return (upper - lower) * torch.rand(size=shape, device=device) + lower
 
 
 class Go2Env:
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, eval=False):
-        self.device = torch.device(gs.device)
+    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, device="mps", eval=False):
+        self.device = torch.device(device)
         self.show_viewer = show_viewer
         self.eval = eval
         self.num_frames = 1993 if self.eval else 241 #save shorter clips during training and longer clips during evaluation
@@ -70,32 +66,19 @@ class Go2Env:
         
         if self.command_cfg is not None:
             self.num_commands = self.command_cfg["num_commands"]
-            self.lin_vel_x_range = self.command_cfg["lin_vel_x_range"]
-            self.lin_vel_y_range = self.command_cfg["lin_vel_y_range"]
-            self.ang_vel_range = self.command_cfg["ang_vel_range"]
-            self.resampling_time = int(self.command_cfg.get("resampling_time_s", 4.0) / self.dt)
-            
-            self.commands = torch.zeros((self.num_envs, self.num_commands), device=self.device, dtype=gs.tc_float)
-
-
+            self.commands = torch.zeros((self.num_envs, self.num_commands), device=gs.device, dtype=gs.tc_float)
+            self.commands[:, 0] = self.command_cfg["lin_vel_x_target"]
+            self.commands[:, 1] = self.command_cfg["lin_vel_y_target"]
+            self.commands[:, 2] = self.command_cfg["ang_vel_target"]
         # Camera and recording related variables
         self.headless: bool = not self.show_viewer
         self._recording: bool = False
         self._recorded_frames_behind: list = []
         self._recorded_frames_side: list = []
 
-
-    def _initialize_feet_buffers(self):
-        self.foot_positions   = torch.zeros((self.num_envs, 4, 3), device=self.device, dtype=gs.tc_float)
-        self.foot_quaternions = torch.zeros((self.num_envs, 4, 4), device=self.device, dtype=gs.tc_float)
-        self.foot_velocities  = torch.zeros((self.num_envs, 4, 3), device=self.device, dtype=gs.tc_float)
-        # Boolean contact mask and cumulative air-time
-        self.feet_contact  = torch.zeros((self.num_envs, 4), device=self.device, dtype=torch.bool)
-        self.feet_air_time = torch.zeros((self.num_envs, 4), device=self.device, dtype=gs.tc_float)
-
     def _setup_scene(self, show_viewer):
         """Set up the simulation scene with appropriate options"""
-        self.scene: Scene = gs.Scene(
+        self.scene  = gs.Scene(
             sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
             viewer_options=gs.options.ViewerOptions(
                 max_FPS=int(0.5 / self.dt),
@@ -106,18 +89,12 @@ class Go2Env:
             vis_options=gs.options.VisOptions(n_rendered_envs=1),
             rigid_options=gs.options.RigidOptions(
                 dt=self.dt,
-                constraint_solver=gs.constraint_solver.Newton,
+                # constraint_solver=gs.constraint_solver.Newton, <--- DIESE ZEILE ENTFERNEN
                 enable_collision=True,
                 enable_joint_limit=True,
             ),
             show_viewer=show_viewer,
         )
-
-        # Get reference to rigid solver
-        for solver in self.scene.sim.solvers:
-            if isinstance(solver, RigidSolver):
-                self.rigid_solver = solver
-                break
 
     def _add_terrain(self):
         """Add terrain or plane to the scene"""
@@ -193,12 +170,12 @@ class Go2Env:
     def _add_and_configure_robot(self):
         """Add robot to the scene and configure its initial state"""
         self.base_init_quat = torch.tensor(self.env_cfg["base_init_quat"], device=self.device)
-        self.inv_base_init_quat = inv_quat(self.base_init_quat) # inverse of the initial orientation quaternion of the robot's base
+        self.inv_base_init_quat = inv_quat(self.base_init_quat) 
         
-        self.robot: RigidEntity = self.scene.add_entity(
+        self.robot = self.scene.add_entity(
             gs.morphs.URDF(
                 file="urdf/go2/urdf/go2.urdf",
-                links_to_keep=self.env_cfg['links_to_keep'],
+                links_to_keep=self.env_cfg['links_to_keep'], # <-- WICHTIG: Wieder einkommentieren!
                 pos=self.base_init_pos.cpu().numpy(),
                 quat=self.base_init_quat.cpu().numpy(),
             ),
@@ -289,6 +266,18 @@ class Go2Env:
         height_field_ids.clamp(min=0)
         self.terrain_heights = self.height_field[height_field_ids[:, 0], height_field_ids[:, 1]]
 
+    def _initialize_feet_buffers(self):
+        """Initialize buffers for foot positions, orientations, and velocities"""
+        self.foot_positions = torch.ones(
+            self.num_envs, 4, 3, device=self.device, dtype=gs.tc_float,
+        ) #not used for now
+        self.foot_quaternions = torch.ones(
+            self.num_envs, 4, 4, device=self.device, dtype=gs.tc_float,
+        )# not used for now
+        self.foot_velocities = torch.ones(
+            self.num_envs, 4, 3, device=self.device, dtype=gs.tc_float,
+        )
+
     def _find_link_indices(self):
         """Find indices of important links like feet, contact points, etc."""
         def find_link_indices(names):
@@ -315,7 +304,6 @@ class Go2Env:
         ) # indices of feet links
 
         ### foot related stuff ###
-        self.feet_link_indices_world_frame = [i+1 for i in self.feet_link_indices]
 
     def step(self, actions):
         """Execute one step of simulation with the given actions"""
@@ -344,6 +332,14 @@ class Go2Env:
 
     def _update_robot_state(self):
         """Update all robot state variables after simulation step"""
+        # ÄNDERUNG 5: Sicheres Handling der Kontaktkräfte
+        forces = self.robot.get_links_net_contact_force()
+        if isinstance(forces, torch.Tensor):
+            self.link_contact_forces[:] = forces.clone().detach()
+        else:
+            self.link_contact_forces[:] = torch.tensor(
+                forces, device=self.device, dtype=gs.tc_float
+            )
         # update buffers
         self.episode_length_buf += 1 # increment episode length
         self.last_base_pos[:] = self.base_pos[:] # store previous base position
@@ -364,9 +360,9 @@ class Go2Env:
         self.dof_vel[:] = self.robot.get_dofs_velocity(self.motor_dofs)# update joint velocities
         
         # Update foot states
-        self.foot_positions[:] = self.rigid_solver.get_links_pos(self.feet_link_indices_world_frame)# update foot positions
-        self.foot_quaternions[:] = self.rigid_solver.get_links_quat(self.feet_link_indices_world_frame) # update foot orientations
-        self.foot_velocities[:] = self.rigid_solver.get_links_vel(self.feet_link_indices_world_frame)# update foot velocities
+        self.foot_positions[:] = self.robot.get_links_pos(self.feet_link_indices)
+        self.foot_quaternions[:] = self.robot.get_links_quat(self.feet_link_indices)
+        self.foot_velocities[:] = self.robot.get_links_vel(self.feet_link_indices)
         
         # Update contact forces
         self.link_contact_forces[:] = torch.tensor(
@@ -374,10 +370,6 @@ class Go2Env:
             device=self.device,
             dtype=gs.tc_float,
         )# net force applied on each links due to direct external contacts, shape (num_envs, num_links, 3)
-        
-        self.feet_contact = (
-            torch.norm(self.link_contact_forces[:, self.feet_link_indices, :], dim=-1) > 1.0
-        )  # shape: (num_envs, 4)
 
     def _check_termination(self):
         """Check termination conditions and reset environments if needed"""
@@ -473,11 +465,7 @@ class Go2Env:
 
     def _compute_observations(self):
         """Compute observations for agent"""
-        scaled_commands = self.commands.clone()
-        scaled_commands[:, 0] *= self.obs_scales['lin_vel']
-        scaled_commands[:, 1] *= self.obs_scales['lin_vel']
-        scaled_commands[:, 2] *= self.obs_scales['ang_vel']
-        
+
         obs = [ 
                 self.base_lin_vel * self.obs_scales['lin_vel'],                     # 3
                 self.base_ang_vel * self.obs_scales["ang_vel"],  # 3, the robot's angular velocity in its base frame(3d)
@@ -485,7 +473,6 @@ class Go2Env:
                 (self.dof_pos - self.default_dof_pos) * self.obs_scales["dof_pos"],  # 12, current joint angles relative to default
                 self.dof_vel * self.obs_scales["dof_vel"],  # 12, current joint velocities 
                 self.actions,  # 12 # current actions issued by the policy
-                self.commands,
                 self.base_pos - self.last_base_pos,  # 3, difference between previous and current base position 
         ]
         if self.use_terrain:
@@ -574,7 +561,6 @@ class Go2Env:
         self.last_actions[envs_idx] = 0.0
         self.last_dof_vel[envs_idx] = 0.0
         self.episode_length_buf[envs_idx] = 0
-        self.feet_air_time[envs_idx]      = 0.0
         self.reset_buf[envs_idx] = True
 
     def _update_episode_stats(self, envs_idx):
@@ -596,17 +582,10 @@ class Go2Env:
 
     def increase_x_target(self, delta):
         """Increase the x target velocity by delta"""
-        mask: torch.Tensor = self.commands[:, 0] < 10.0 # mask to select environments where the x target velocity is less than 2.5
+        mask: torch.Tensor = self.commands[:, 0] < 2.5 # mask to select environments where the x target velocity is less than 2.5
         self.commands[mask, 0] += delta
         # self.target_increased = True # set the flag to indicate that the target has been increased
         print("Increased x target velocity by", delta)
-
-    def resample_commands(self, env_ids):
-        if len(env_ids) == 0:
-            return
-        self.commands[env_ids, 0] = gs_rand_float(*self.lin_vel_x_range, (len(env_ids),), self.device)
-        self.commands[env_ids, 1] = gs_rand_float(*self.lin_vel_y_range, (len(env_ids),), self.device)
-        self.commands[env_ids, 2] = gs_rand_float(*self.ang_vel_range, (len(env_ids),), self.device)
 
     def _set_camera(self):
         '''Set camera positions and directions for recording'''
@@ -614,8 +593,7 @@ class Go2Env:
         self._floating_camera_behind = self.scene.add_camera(
             pos=np.array([-1.5, 0.0, 5.0]),  # Behind and elevated
             lookat=np.array([0, 0, 0.1]),    # Looking at the robot
-            fov=45,                          
-            GUI=False,
+            fov=45,   
             res=(720, 720),               
         )
         
@@ -639,7 +617,9 @@ class Go2Env:
                 pos=robot_pos + np.array([-1.5, 0.0, 2.5]),  # Position camera behind and above robot
                 lookat=robot_pos + np.array([0.3, 0, 0.0])   # Look slightly ahead of the robot
             )
-            frame_behind, _, _, _ = self._floating_camera_behind.render()
+            res_behind = self._floating_camera_behind.render()
+            frame_behind = res_behind[0] if isinstance(res_behind, tuple) else res_behind
+            self._recorded_frames_behind.append(frame_behind)
             self._recorded_frames_behind.append(frame_behind)
             
             # Side camera
@@ -648,7 +628,9 @@ class Go2Env:
                     pos=robot_pos + np.array([0.0, -2.5, 1.0]),  # Side view following robot
                     lookat=robot_pos + np.array([0.0, 0, -0.1])  # Look at robot's feet level
                 )
-                frame_side, _, _, _ = self._floating_camera_side.render()
+                res_side = self._floating_camera_side.render()
+                frame_side = res_side[0] if isinstance(res_side, tuple) else res_side
+                self._recorded_frames_side.append(frame_side)
                 self._recorded_frames_side.append(frame_side)
 
     def get_recorded_frames(self):

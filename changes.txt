@@ -1,0 +1,13 @@
+1. Policy konditonieren
+    Ohne Konditionierung: Das Netz versucht einfach nur "irgendwie" zu laufen.
+    Mit Konditionierung: Die Policy ist eine Funktion $\pi(a | s, c)$, 
+        wobei $a$ die Aktion, $s$ der Zustand und $c$ das Command ist. 
+        Das Netz lernt also eine Familie von Verhaltensweisen, 
+        die du durch das Command-Signal umschalten kannst.
+
+
+2. Alle Environments haben verschiedene Geschwindigkeiten
+
+3. Roboter durch commands slalom laufen lassen
+
+4. Roboter schnell auf Terrain laufen lassen

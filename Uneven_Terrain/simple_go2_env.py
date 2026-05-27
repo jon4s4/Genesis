@@ -9,7 +9,7 @@ def gs_rand_float(lower, upper, shape, device):
 
 
 class Go2Env:
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, device="mps", eval=False):
+    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg = None, show_viewer=False, device="cuda", eval=False):
         self.device = torch.device(device)
         self.show_viewer = show_viewer
         self.eval = eval
@@ -67,6 +67,7 @@ class Go2Env:
         if self.command_cfg is not None:
             self.num_commands = self.command_cfg["num_commands"]
             self.commands = torch.zeros((self.num_envs, self.num_commands), device=gs.device, dtype=gs.tc_float)
+            self.max_lin_vel_x = self.command_cfg["lin_vel_x_target"]
             self.commands[:, 0] = self.command_cfg["lin_vel_x_target"]
             self.commands[:, 1] = self.command_cfg["lin_vel_y_target"]
             self.commands[:, 2] = self.command_cfg["ang_vel_target"]
@@ -309,10 +310,24 @@ class Go2Env:
         """Execute one step of simulation with the given actions"""
         self._process_actions(actions)
         self._update_robot_state()
-        self._check_termination()
+        self._check_termination() # Setzt abgelaufene/gestürzte Umgebungen zurück
+
+        # --- NEU: Periodisches Resampling während der Episode ---
+        resample_interval_steps = int(4.0 / self.dt) # 4.0s / 0.02s = 200 Schritte
+        
+        # Wir filtern nach Umgebungen, die laufen (Schritt > 0) und das Intervall erreicht haben
+        periodic_resample_idx = (
+            (self.episode_length_buf > 0) & 
+            (self.episode_length_buf % resample_interval_steps == 0)
+        ).nonzero(as_tuple=False).flatten()
+        
+        if len(periodic_resample_idx) > 0:
+            self._resample_commands(periodic_resample_idx)
+        # --------------------------------------------------------
+
         self._compute_rewards()
         if self.use_terrain:
-            self._compute_relative_heights() # compute the height field patch in front of the robot
+            self._compute_relative_heights() 
 
         self._compute_observations()
         self._render_headless()
@@ -467,6 +482,7 @@ class Go2Env:
         """Compute observations for agent"""
 
         obs = [ 
+                self.commands * self.obs_scales.get('cam_commands', 1.0),
                 self.base_lin_vel * self.obs_scales['lin_vel'],                     # 3
                 self.base_ang_vel * self.obs_scales["ang_vel"],  # 3, the robot's angular velocity in its base frame(3d)
                 self.projected_gravity,  # 3, gravity vector in the robot's base frame, indicating its orientation
@@ -487,6 +503,7 @@ class Go2Env:
         if self.num_privileged_obs is not None:
 
             privileged_obs = [
+                self.commands * self.obs_scales.get('cam_commands', 1.0),
                 self.base_lin_vel * self.obs_scales['lin_vel'],                     # 3
                 self.base_ang_vel * self.obs_scales['ang_vel'],                     # 3
                 self.projected_gravity,                                             # 3
@@ -562,6 +579,7 @@ class Go2Env:
         self.last_dof_vel[envs_idx] = 0.0
         self.episode_length_buf[envs_idx] = 0
         self.reset_buf[envs_idx] = True
+        self._resample_commands(envs_idx)
 
     def _update_episode_stats(self, envs_idx):
         """Update episode statistics for specified environments"""
@@ -581,11 +599,16 @@ class Go2Env:
     
 
     def increase_x_target(self, delta):
-        """Increase the x target velocity by delta"""
-        mask: torch.Tensor = self.commands[:, 0] < 2.5 # mask to select environments where the x target velocity is less than 2.5
-        self.commands[mask, 0] += delta
-        # self.target_increased = True # set the flag to indicate that the target has been increased
-        print("Increased x target velocity by", delta)
+        """Erhöht das obere Limit für das Sampling der x-Geschwindigkeit"""
+        # Hard-Cap bei 3.5 m/s, damit es nicht ins Unendliche wächst
+        self.max_lin_vel_x = min(self.max_lin_vel_x + delta, 3.5)
+        print(f"Erhöhte max x target velocity Limit auf {self.max_lin_vel_x:.2f}")
+
+    def _resample_commands(self, env_ids):
+        # Nutzt nun das dynamische Limit self.max_lin_vel_x statt der harten 3.5
+        self.commands[env_ids, 0] = gs_rand_float(0.0, self.max_lin_vel_x, (len(env_ids),), self.device)
+        self.commands[env_ids, 1] = gs_rand_float(-0.5, 0.5, (len(env_ids),), self.device)
+        self.commands[env_ids, 2] = gs_rand_float(-1.0, 1.0, (len(env_ids),), self.device)
 
     def _set_camera(self):
         '''Set camera positions and directions for recording'''
