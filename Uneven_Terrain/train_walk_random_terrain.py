@@ -4,10 +4,11 @@ import os
 import pickle
 import shutil
 
+import genesis as gs
+gs.init(backend=gs.gpu, precision="64")
 import wandb
 from simple_reward_wrapper import WalkRandomTerrain
 from rsl_rl.runners import OnPolicyRunner
-import genesis as gs
 import random
 
 
@@ -117,10 +118,10 @@ def get_cfgs():
         ],
         # PD
         "kp": 40.0, # proportional gain that multiplies the instantaneous position error (desired − actual joint angle) to produce a corrective torque
-        "kd": 1.2, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
+        "kd": 1.0, #  derivative gain that multiplies the time-derivative of the position error (angular velocity error) to generate a damping torque opposing motion
         # termination
-        "termination_if_roll_greater_than": 20,  # degree
-        "termination_if_pitch_greater_than": 30,  # degree
+        "termination_if_roll_greater_than": 45,  # degree
+        "termination_if_pitch_greater_than": 45,  # degree
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s":40.0,
@@ -155,7 +156,7 @@ def get_cfgs():
         },
     }
     reward_cfg = {
-        "tracking_sigma": 0.30, 
+        "tracking_sigma": 0.50, 
         "reward_scales": {
             "tracking_lin_vel_x": 1.0,
             "tracking_ang_vel": 1.0,
@@ -170,10 +171,9 @@ def get_cfgs():
     }
     command_cfg = {
         "num_commands": 3,
-        "resampling_time": 4.0,
-        "lin_vel_x_target": 0.6,
-        "lin_vel_y_target": 0.0,
-        "ang_vel_target": 0.0,
+        "lin_vel_x_range": [1.0, 2.0],   # Walk speed
+        "lin_vel_y_range": [-0.0, 0.0],  # Lateral movement
+        "ang_vel_range": [-0.0, 0.0],    # Turning
     }
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
@@ -186,8 +186,6 @@ def main():
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument('--ckpt', type=int, default=1000)
     args = parser.parse_args()
-
-    gs.init(backend=gs.gpu, logging_level="warning")
 
     log_dir = f"logs/{args.exp_name}"
     env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
