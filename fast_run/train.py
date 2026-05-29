@@ -54,8 +54,8 @@ def get_train_cfg(exp_name, max_iterations):
             "runner_class_name": "runner_class_name",
             "save_interval": 200,
             "init_at_random_ep_len": False,
-            "curriculum": False, # whether to use curriculum learning
-            "curriculum_delta": 0.04, # how much to increase the target linear velocity during curriculum learning
+            "curriculum": True, # whether to use curriculum learning
+            "curriculum_delta": 0.02, # how much to increase the target linear velocity during curriculum learning
             "curriculum_threshold": 0.85 # the threshold for the mean of the last 20 tracking rewards to increase the target linear velocity 
         },
         "runner_class_name": "OnPolicyRunner",
@@ -142,33 +142,13 @@ def get_cfgs():
         "tracking_sigma": 0.3,
         "reward_scales": {
             "tracking_lin_vel_x":  2.0,
-            "lin_vel_y":          -0.4,
-            #"paper_velocity":          2.0,
-            #"feet_air_time":           2.0,     # Entspricht dem "Feet swing reward"
-            #"paper_energy_penalty":   -0.00002,
-            #"paper_orientation":      -0.4,
+            "lin_vel_y":          -0.1,
             "paper_lateral_drift":    -0.4,
             "paper_height":           -50.0,
-
-            #"penalized_contact":      -0.1,
-
-
-
             "tracking_ang_vel":    	0.4,
             "action_rate":        	-0.005,
             "lin_vel_z":          	-2.0,
-            # #"orientation":        -0.5,
-            # "feet_air_time":       1.0,
-            # "feet_slip":          -0.3,
-            # "penalized_contact":  -1.0,
-
-
-            #"ang_vel_xy":         -0.5,
-            #"tracking_lin_vel_y":  1.0,
-            #"torques":            -1e-5,
-            #"smoothness":         -0.001,
-            # "alive":               1.0,
-            # "termination":        -3.0,
+	    "sideway_movement":		-1.0,
         },
     }
 

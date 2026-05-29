@@ -49,8 +49,9 @@ class SprintFlatTerrain(Go2Env):
     def _reward_lin_vel_y(self):
         """Bestraft seitliches Abdriften (besser als absolute Positionsbestrafung)."""
         return torch.square(self.base_lin_vel[:, 1])
+    
 
-
+    
     def _reward_feet_air_time(self):
         contact = self.feet_contact                         # (num_envs, 4) bool
         first_contact = (self.feet_air_time > 0) & contact
@@ -153,3 +154,7 @@ class SprintFlatTerrain(Go2Env):
         Zwingt den Roboter, den Rumpf exakt auf 30 cm Höhe zu halten.
         """
         return torch.abs(self.base_pos[:, 2] - 0.3)
+
+    def _reward_sideway_movement(self):
+        # Penalize sideway movement away from the starting point
+        return torch.clamp(torch.abs(self.base_pos[:, 1] - self.base_init_pos[1]), max=2)
