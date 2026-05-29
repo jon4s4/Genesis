@@ -1,9 +1,9 @@
-from simple_go2_env import Go2Env
+from go2_env import Go2Env
 import torch 
 
 # yaw is from left to right, pitch is from up to down, roll is rotating 
 
-class WalkRandomTerrain(Go2Env):
+class RunFractalTerrain(Go2Env):
 
     def _reward_tracking_lin_vel_x(self):
         # Tracking of linear velocity commands (x axes)

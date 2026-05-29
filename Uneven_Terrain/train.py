@@ -7,7 +7,7 @@ import shutil
 import genesis as gs
 gs.init(backend=gs.gpu, precision="64")
 import wandb
-from simple_reward_wrapper import WalkRandomTerrain
+from reward_wrapper import RunFractalTerrain
 from rsl_rl.runners import OnPolicyRunner
 import random
 
@@ -206,8 +206,8 @@ def main():
     with open(os.path.join(log_dir, "config.json"), "w") as f:
         json.dump(all_cfgs, f, indent=4)
 
-    env = WalkRandomTerrain(
-        num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg,
+    env = RunFractalTerrain(
+        num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg, device=gs.gpu
     )
 
     runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda", curriculum=train_cfg["runner"]["curriculum"], delta=train_cfg["runner"]["curriculum_delta"], curriculum_threshold=train_cfg["runner"]["curriculum_threshold"])
@@ -232,7 +232,7 @@ if __name__ == "__main__":
 To only see one of the GPUs: export CUDA_VISIBLE_DEVICES=1 (or 0)
 python train_walk_random_terrain.py -e go2-all-terrains-v0 -B 4096 --max_iterations 2000
 
-python train_walk_random_terrain.py -e test -B 4096 --max_iterations 312
+python train.py -e test -B 4096 --max_iterations 312
 resume : 
-python train_uneven.py -e go2-uneven-v4-resume -B 4096 --max_iterations 1000 --resume go2-uneven-v4 --ckpt 1000
+python train.py -e test -B 4096 --max_iterations 1000 --resume test --ckpt 1000
 """
