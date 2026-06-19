@@ -1,0 +1,197 @@
+[38;5;159m[Genesis] [17:50:01] [INFO] [38;5;121m╭───────────────────────────────────────────────╮[0m[38;5;159m[0m
+[38;5;159m[Genesis] [17:50:01] [INFO] [38;5;121m│┈┉┈┉┈┉┈┉┈┉┈┉┈┉┈┉┈┉┈[0m[38;5;159m [38;5;121m[1m[3mGenesis[0m[38;5;159m [38;5;121m┈┉┈┉┈┉┈┉┈┉┈┉┈┉┈┉┈┉┈│[0m[38;5;159m[0m
+[38;5;159m[Genesis] [17:50:01] [INFO] [38;5;121m╰───────────────────────────────────────────────╯[0m[38;5;159m[0m
+[38;5;159m[Genesis] [17:50:02] [INFO] Running on [38;5;121m[4m[NVIDIA GeForce RTX 4090][0m[38;5;159m with backend [38;5;121m[4mgs.cuda[0m[38;5;159m. Device memory: [38;5;121m[4m23.52[0m[38;5;159m GB.[0m
+[38;5;159m[Genesis] [17:50:02] [INFO] 🚀 Genesis initialized. 🔖 version: [38;5;121m[4m0.4.7[0m[38;5;159m, 🎨 theme: [38;5;121m[4mdark[0m[38;5;159m, 🌱 seed: [38;5;121m[4mNone[0m[38;5;159m, 🐛 debug: [38;5;121m[4mFalse[0m[38;5;159m, 📏 precision: [38;5;121m[4m32[0m[38;5;159m, 🔥 performance: [38;5;121m[4mFalse[0m[38;5;159m, 💬 verbose: [38;5;121m[4mINFO[0m[38;5;159m[0m
+[38;5;226m[Genesis] [17:50:05] [WARNING] Viewer option 'n_rendered_envs' is deprecated and will be removed in a future release. Please use 'rendered_envs_idx' instead.[0m
+[38;5;159m[Genesis] [17:50:07] [INFO] Scene [38;5;121m[3m<5fafd0d>[0m[38;5;159m created.[0m
+[38;5;159m[Genesis] [17:50:07] [INFO] Adding [38;5;121m<gs.engine.entities.RigidEntity>[0m[38;5;159m. idx: [38;5;121m0[0m[38;5;159m, uid: [38;5;121m[3m<e5d396d>[0m[38;5;159m, morph: [38;5;121m<gs.morphs.URDF(file='/home/jfriesen/.local/lib/python3.12/site-packages/genesis/assets/urdf/plane/plane.urdf')>[0m[38;5;159m, material: [38;5;121m<gs.materials.Rigid>[0m[38;5;159m.[0m
+[38;5;159m[Genesis] [17:50:08] [INFO] Adding [38;5;121m<gs.engine.entities.RigidEntity>[0m[38;5;159m. idx: [38;5;121m1[0m[38;5;159m, uid: [38;5;121m[3m<8aaf8c8>[0m[38;5;159m, morph: [38;5;121m<gs.morphs.URDF(file='/home/jfriesen/.local/lib/python3.12/site-packages/genesis/assets/urdf/go2/urdf/go2.urdf')>[0m[38;5;159m, material: [38;5;121m<gs.materials.Rigid>[0m[38;5;159m.[0m
+[38;5;159m[Genesis] [17:50:10] [INFO] Building scene [38;5;121m[3m<5fafd0d>[0m[38;5;159m...[0m
+[38;5;226m[Genesis] [17:50:11] [WARNING] Neutral robot position (qpos0) exceeds joint limits.[0m
+[38;5;159m[Genesis] [17:50:12] [INFO] Compiling simulation kernels...[0m
+[38;5;159m[Genesis] [17:50:13] [INFO] Building visualizer...[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [17:50:15] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+/home/jfriesen/.local/lib/python3.12/site-packages/torch/utils/_device.py:122: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  return func(*args, **kwargs)
+Actor MLP: Sequential(
+  (0): Linear(in_features=51, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=12, bias=True)
+)
+Critic MLP: Sequential(
+  (0): Linear(in_features=75, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=1, bias=True)
+)
+[38;5;159m[Genesis] [17:50:21] [INFO] Running at [38;5;121m0.65[0m[38;5;159m FPS ([38;5;121m0.65[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:21] [INFO] Running at [38;5;121m11.92[0m[38;5;159m FPS ([38;5;121m11.92[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m84.77[0m[38;5;159m FPS ([38;5;121m84.77[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m118.59[0m[38;5;159m FPS ([38;5;121m118.59[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m118.63[0m[38;5;159m FPS ([38;5;121m118.63[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m118.68[0m[38;5;159m FPS ([38;5;121m118.68[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m137.56[0m[38;5;159m FPS ([38;5;121m137.56[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m136.86[0m[38;5;159m FPS ([38;5;121m136.86[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m136.18[0m[38;5;159m FPS ([38;5;121m136.18[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m135.56[0m[38;5;159m FPS ([38;5;121m135.56[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m135.05[0m[38;5;159m FPS ([38;5;121m135.05[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m134.54[0m[38;5;159m FPS ([38;5;121m134.54[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m134.04[0m[38;5;159m FPS ([38;5;121m134.04[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m133.69[0m[38;5;159m FPS ([38;5;121m133.69[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m133.03[0m[38;5;159m FPS ([38;5;121m133.03[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m132.70[0m[38;5;159m FPS ([38;5;121m132.70[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m132.31[0m[38;5;159m FPS ([38;5;121m132.31[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m132.09[0m[38;5;159m FPS ([38;5;121m132.09[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m131.76[0m[38;5;159m FPS ([38;5;121m131.76[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:22] [INFO] Running at [38;5;121m131.54[0m[38;5;159m FPS ([38;5;121m131.54[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m131.35[0m[38;5;159m FPS ([38;5;121m131.35[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m131.19[0m[38;5;159m FPS ([38;5;121m131.19[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m131.10[0m[38;5;159m FPS ([38;5;121m131.10[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.95[0m[38;5;159m FPS ([38;5;121m130.95[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.94[0m[38;5;159m FPS ([38;5;121m130.94[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.81[0m[38;5;159m FPS ([38;5;121m130.81[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.59[0m[38;5;159m FPS ([38;5;121m130.59[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.48[0m[38;5;159m FPS ([38;5;121m130.48[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.48[0m[38;5;159m FPS ([38;5;121m130.48[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.43[0m[38;5;159m FPS ([38;5;121m130.43[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.45[0m[38;5;159m FPS ([38;5;121m130.45[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.47[0m[38;5;159m FPS ([38;5;121m130.47[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.39[0m[38;5;159m FPS ([38;5;121m130.39[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.39[0m[38;5;159m FPS ([38;5;121m130.39[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.37[0m[38;5;159m FPS ([38;5;121m130.37[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.36[0m[38;5;159m FPS ([38;5;121m130.36[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.33[0m[38;5;159m FPS ([38;5;121m130.33[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.35[0m[38;5;159m FPS ([38;5;121m130.35[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:23] [INFO] Running at [38;5;121m130.16[0m[38;5;159m FPS ([38;5;121m130.16[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.21[0m[38;5;159m FPS ([38;5;121m130.21[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.20[0m[38;5;159m FPS ([38;5;121m130.20[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.16[0m[38;5;159m FPS ([38;5;121m130.16[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.18[0m[38;5;159m FPS ([38;5;121m130.18[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.21[0m[38;5;159m FPS ([38;5;121m130.21[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.21[0m[38;5;159m FPS ([38;5;121m130.21[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.23[0m[38;5;159m FPS ([38;5;121m130.23[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.20[0m[38;5;159m FPS ([38;5;121m130.20[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.19[0m[38;5;159m FPS ([38;5;121m130.19[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.23[0m[38;5;159m FPS ([38;5;121m130.23[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.21[0m[38;5;159m FPS ([38;5;121m130.21[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.04[0m[38;5;159m FPS ([38;5;121m130.04[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.05[0m[38;5;159m FPS ([38;5;121m130.05[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.05[0m[38;5;159m FPS ([38;5;121m130.05[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.03[0m[38;5;159m FPS ([38;5;121m130.03[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.03[0m[38;5;159m FPS ([38;5;121m130.03[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.06[0m[38;5;159m FPS ([38;5;121m130.06[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:24] [INFO] Running at [38;5;121m130.05[0m[38;5;159m FPS ([38;5;121m130.05[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m130.07[0m[38;5;159m FPS ([38;5;121m130.07[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m130.09[0m[38;5;159m FPS ([38;5;121m130.09[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m130.09[0m[38;5;159m FPS ([38;5;121m130.09[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m130.08[0m[38;5;159m FPS ([38;5;121m130.08[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m130.05[0m[38;5;159m FPS ([38;5;121m130.05[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.84[0m[38;5;159m FPS ([38;5;121m129.84[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.87[0m[38;5;159m FPS ([38;5;121m129.87[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.69[0m[38;5;159m FPS ([38;5;121m129.69[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.70[0m[38;5;159m FPS ([38;5;121m129.70[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.66[0m[38;5;159m FPS ([38;5;121m129.66[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.61[0m[38;5;159m FPS ([38;5;121m129.61[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.56[0m[38;5;159m FPS ([38;5;121m129.56[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.48[0m[38;5;159m FPS ([38;5;121m129.48[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.48[0m[38;5;159m FPS ([38;5;121m129.48[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.48[0m[38;5;159m FPS ([38;5;121m129.48[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.53[0m[38;5;159m FPS ([38;5;121m129.53[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.49[0m[38;5;159m FPS ([38;5;121m129.49[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.50[0m[38;5;159m FPS ([38;5;121m129.50[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:25] [INFO] Running at [38;5;121m129.34[0m[38;5;159m FPS ([38;5;121m129.34[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.33[0m[38;5;159m FPS ([38;5;121m129.33[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.36[0m[38;5;159m FPS ([38;5;121m129.36[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.41[0m[38;5;159m FPS ([38;5;121m129.41[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.45[0m[38;5;159m FPS ([38;5;121m129.45[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.50[0m[38;5;159m FPS ([38;5;121m129.50[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.50[0m[38;5;159m FPS ([38;5;121m129.50[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.54[0m[38;5;159m FPS ([38;5;121m129.54[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.54[0m[38;5;159m FPS ([38;5;121m129.54[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.57[0m[38;5;159m FPS ([38;5;121m129.57[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.58[0m[38;5;159m FPS ([38;5;121m129.58[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.59[0m[38;5;159m FPS ([38;5;121m129.59[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.41[0m[38;5;159m FPS ([38;5;121m129.41[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.37[0m[38;5;159m FPS ([38;5;121m129.37[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.27[0m[38;5;159m FPS ([38;5;121m129.27[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.32[0m[38;5;159m FPS ([38;5;121m129.32[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.25[0m[38;5;159m FPS ([38;5;121m129.25[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.21[0m[38;5;159m FPS ([38;5;121m129.21[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:26] [INFO] Running at [38;5;121m129.15[0m[38;5;159m FPS ([38;5;121m129.15[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m129.01[0m[38;5;159m FPS ([38;5;121m129.01[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m129.12[0m[38;5;159m FPS ([38;5;121m129.12[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m129.30[0m[38;5;159m FPS ([38;5;121m129.30[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m129.29[0m[38;5;159m FPS ([38;5;121m129.29[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m129.05[0m[38;5;159m FPS ([38;5;121m129.05[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m110.97[0m[38;5;159m FPS ([38;5;121m110.97[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m129.36[0m[38;5;159m FPS ([38;5;121m129.36[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m129.14[0m[38;5;159m FPS ([38;5;121m129.14[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.90[0m[38;5;159m FPS ([38;5;121m128.90[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.69[0m[38;5;159m FPS ([38;5;121m128.69[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.53[0m[38;5;159m FPS ([38;5;121m128.53[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.45[0m[38;5;159m FPS ([38;5;121m128.45[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.34[0m[38;5;159m FPS ([38;5;121m128.34[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.33[0m[38;5;159m FPS ([38;5;121m128.33[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.34[0m[38;5;159m FPS ([38;5;121m128.34[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.30[0m[38;5;159m FPS ([38;5;121m128.30[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.37[0m[38;5;159m FPS ([38;5;121m128.37[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:27] [INFO] Running at [38;5;121m128.27[0m[38;5;159m FPS ([38;5;121m128.27[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.32[0m[38;5;159m FPS ([38;5;121m128.32[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.40[0m[38;5;159m FPS ([38;5;121m128.40[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.48[0m[38;5;159m FPS ([38;5;121m128.48[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.57[0m[38;5;159m FPS ([38;5;121m128.57[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.62[0m[38;5;159m FPS ([38;5;121m128.62[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.74[0m[38;5;159m FPS ([38;5;121m128.74[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.71[0m[38;5;159m FPS ([38;5;121m128.71[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.80[0m[38;5;159m FPS ([38;5;121m128.80[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.77[0m[38;5;159m FPS ([38;5;121m128.77[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.81[0m[38;5;159m FPS ([38;5;121m128.81[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.83[0m[38;5;159m FPS ([38;5;121m128.83[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.68[0m[38;5;159m FPS ([38;5;121m128.68[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.69[0m[38;5;159m FPS ([38;5;121m128.69[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.64[0m[38;5;159m FPS ([38;5;121m128.64[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.41[0m[38;5;159m FPS ([38;5;121m128.41[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.40[0m[38;5;159m FPS ([38;5;121m128.40[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.14[0m[38;5;159m FPS ([38;5;121m128.14[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m128.02[0m[38;5;159m FPS ([38;5;121m128.02[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:28] [INFO] Running at [38;5;121m127.89[0m[38;5;159m FPS ([38;5;121m127.89[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m127.68[0m[38;5;159m FPS ([38;5;121m127.68[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m127.46[0m[38;5;159m FPS ([38;5;121m127.46[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m127.27[0m[38;5;159m FPS ([38;5;121m127.27[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m127.10[0m[38;5;159m FPS ([38;5;121m127.10[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.99[0m[38;5;159m FPS ([38;5;121m126.99[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.64[0m[38;5;159m FPS ([38;5;121m126.64[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.62[0m[38;5;159m FPS ([38;5;121m126.62[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.52[0m[38;5;159m FPS ([38;5;121m126.52[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.47[0m[38;5;159m FPS ([38;5;121m126.47[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.49[0m[38;5;159m FPS ([38;5;121m126.49[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.49[0m[38;5;159m FPS ([38;5;121m126.49[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.52[0m[38;5;159m FPS ([38;5;121m126.52[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.61[0m[38;5;159m FPS ([38;5;121m126.61[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+[38;5;159m[Genesis] [17:50:29] [INFO] Running at [38;5;121m126.67[0m[38;5;159m FPS ([38;5;121m126.67[0m[38;5;159m FPS per env, [38;5;121m1[0m[38;5;159m envs).[0m
+fps 50
+[38;5;159m[Genesis] [17:50:29] [INFO] Saving video to [38;5;121m"test_3000_behind.mp4"[0m[38;5;159m...[0m
+[38;5;159m[Genesis] [17:50:31] [INFO] Video saved.[0m
+[38;5;159m[Genesis] [17:50:31] [INFO] Saving video to [38;5;121m"test_3000_side.mp4"[0m[38;5;159m...[0m
+[38;5;159m[Genesis] [17:50:32] [INFO] Video saved.[0m
+Saved recordings for checkpoint 3000.
+[38;5;159m[Genesis] [17:50:32] [INFO] 💤 Exiting Genesis and caching compiled kernels...[0m

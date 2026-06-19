@@ -11,3 +11,74 @@
 3. Roboter durch commands slalom laufen lassen
 
 4. Roboter schnell auf Terrain laufen lassen
+
+
+
+Anpassung von go2_env.py insgesamt:
+
+1. Integration dynamischer Geschwindigkeitsbefehle (Resampling)
+
+Was verändert wurde:
+
+    Die festen Zielgeschwindigkeiten (lin_vel_x_target etc.) in _initialize_env_parameters wurden entfernt.
+
+    Eine neue Methode _resample_commands wurde hinzugefügt, die zufällige Zielgeschwindigkeiten innerhalb 
+    definierter Grenzen (lin_vel_x_range, lin_vel_y_range, ang_vel_range) generiert.
+
+    Diese Methode wird nun an zwei kritischen Stellen aufgerufen:
+
+        Bei jedem Environment-Reset in _reset_buffers.
+
+        Periodisch in der step-Methode (alle 200 Schritte bzw. 4 Sekunden).
+    Warum das notwendig war:
+Ein neuronales Netz, das immer nur auf exakt eine Geschwindigkeit (z. B. 0.6 m/s) trainiert wird, 
+überanpasst ("overfitting") und lernt eine sehr starre Bewegung. 
+Durch das ständige, zufällige Wechseln der Befehle (Domain Randomization) wird der Roboter gezwungen, 
+dynamische Übergänge zu lernen und auf das gesamte Spektrum von Stillstand bis Sprint flexibel zu reagieren.
+
+2. Sichtbarkeit der Ziele (Observations)
+
+Was verändert wurde:
+
+    In der Methode _compute_observations wurde der Tensor self.commands (multipliziert mit einer Skalierung) 
+    als allererstes Element sowohl in die obs-Liste als auch in die privileged_obs-Liste eingefügt.
+
+Warum das notwendig war:
+Ohne diese Änderung war der Agent "blind". Wenn sich das Ziel durch das Resampling ändert, 
+muss das neuronale Netz (sowohl der Actor, der steuert, als auch der Critic, der bewertet) wissen, 
+welche Geschwindigkeit aktuell gefordert ist. Fehlt diese Information, kann der Algorithmus keinen 
+Zusammenhang zwischen seiner Bewegung und der erhaltenen Belohnung herstellen.
+
+3. Dynamisches Curriculum Learning (Speed Limits)
+
+Was verändert wurde:
+
+    Die Methode increase_x_target modifiziert nun nicht mehr direkt die Befehle, sondern erhöht eine dynamische Obergrenze: 
+    self.max_lin_vel_x = min(self.max_lin_vel_x + delta, 3.5).
+
+    Die _resample_commands-Methode greift bei der X-Geschwindigkeit auf diese self.max_lin_vel_x als oberes Limit zurück.
+
+Warum das notwendig war:
+Hohe Geschwindigkeiten wie 3.5 m/s erfordern Flugphasen (Galopp), die ein untrainiertes Netz nicht zufällig entdecken kann, 
+ohne vorher umzufallen. Das Curriculum schränkt den Zufallsgenerator anfangs auf langsame Geschwindigkeiten ein, 
+bei denen der Roboter grundlegende Stabilität lernt. 
+Erst bei Erfolg schiebt das System das Limit schrittweise nach oben, sodass der Roboter 
+seine bereits funktionierende Bewegung fließend beschleunigen kann.
+
+
+4. Präzisere Physik-Abfragen für die Füße (Rigid Solver)
+
+Was verändert wurde:
+
+    In _setup_scene wird nun explizit der RigidSolver des Simulators extrahiert und in self.rigid_solver gespeichert.
+
+    Es wurde eine neue Mapping-Liste self.feet_link_indices_world_frame erstellt.
+
+    In _update_robot_state werden die Fuß-Positionen, -Rotationen und -Geschwindigkeiten nicht mehr über self.robot.get_links_pos, sondern direkt über self.rigid_solver.get_links_pos abgefragt.
+
+Warum das notwendig war:
+Um bei hohen Geschwindigkeiten das Wegrutschen des Roboters wirkungsvoll zu verhindern, 
+benötigt die Belohnungsfunktion (wie der besprochene feet_slip Reward) absolut präzise 
+Geschwindigkeiten der Füße im globalen Weltkoordinatensystem. Der direkte Zugriff auf 
+den RigidSolver liefert exaktere physikalische Zustände des Kollisions-Meshes als die 
+relative Abfrage über das Roboter-Objekt, was essenziell für die Berechnung von Reibung und Schlupf ist.
