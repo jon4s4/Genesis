@@ -1,2 +1,11 @@
 - verschiedene Karten
 - Kurven als commands
+
+
+- Bereich von base_height_target anstatt fester Wert (0.02 Einheiten?)
+- Base_height ganz rausnehmen?
+- base_height vanishen nach Iterationen?
+
+Aufschrieb:
+    - Was war anders als bei Emre?
+    - Experimente vergleichen
