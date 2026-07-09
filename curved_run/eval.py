@@ -180,7 +180,7 @@ def main():
     ax3.set_aspect("equal", adjustable="datalim")
 
     plt.tight_layout()
-    plt.savefig("speed_plot.png")
+    plt.savefig(f"speed_plot_{args.ckpt}.png")
 
     final_ang_vel_error = abs(target_ang_vels[-1] - actual_ang_vels[-1])
     print(f"Finaler Gierraten-Fehler: {final_ang_vel_error:.2f} deg/s")

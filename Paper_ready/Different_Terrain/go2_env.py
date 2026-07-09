@@ -619,7 +619,7 @@ class Go2Env:
         """Increase the x target velocity by delta"""
         mask: torch.Tensor = self.commands[:, 0] < 10.0 # mask to select environments where the x target velocity is less than 2.5
         self.commands[mask, 0] += delta
-        self.max_lin_vel_x = min(self.max_lin_vel_x + delta, 5.0)
+        self.max_lin_vel_x = min(self.max_lin_vel_x + delta, 10.0)
         # self.target_increased = True # set the flag to indicate that the target has been increased
         print("Increased x target velocity by", delta)
 
