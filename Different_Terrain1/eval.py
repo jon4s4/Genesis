@@ -90,7 +90,7 @@ def main():
             target_speeds.append(env.commands[0, 0].item())
 
             # Genug Frames für ~45m bei vel_x m/s: anpassen falls Episode zu kurz/lang
-            if args.record and n_frames == 2000:
+            if args.record and n_frames == 1000:
                 env.stop_recording(
                     save_path_behind=f"{args.exp_name}_{args.ckpt}_behind.mp4",
                     save_path_side=f"{args.exp_name}_{args.ckpt}_side.mp4",

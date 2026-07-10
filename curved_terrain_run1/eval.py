@@ -140,14 +140,14 @@ def main():
 
             if args.record and n_frames == 1000:
                 env.stop_recording(
-                    save_path_behind=f"{args.exp_name}_{args.ckpt}_behind.mp4",
-                    save_path_side=f"{args.exp_name}_{args.ckpt}_side.mp4",
+                    save_path_behind=f"{args.exp_name}_{args.ckpt}_{args.vel_x}_{args.ang_vel}_behind.mp4",
+                    save_path_side=f"{args.exp_name}_{args.ckpt}_{args.vel_x}_{args.ang_vel}_side.mp4",
                 )
                 print(f"Saved recordings for checkpoint {args.ckpt}.")
                 break
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))
-
+    # --- Plot 1: Beschleunigungsprofil (Geschwindigkeit) ---
+    fig1, ax1 = plt.subplots(figsize=(10, 4))
     ax1.plot(target_speeds, label="Ziel-Geschwindigkeit (Command)", linestyle="--", color="gray")
     ax1.plot(actual_speeds, label="Tatsächliche Geschwindigkeit", color="blue")
     ax1.set_xlabel("Simulationsschritte")
@@ -155,7 +155,12 @@ def main():
     ax1.set_title("Beschleunigungsprofil des Go2")
     ax1.legend()
     ax1.grid(True)
+    fig1.tight_layout()
+    fig1.savefig(f"speed_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
+    plt.close(fig1)
 
+    # --- Plot 2: Gierraten-Tracking ---
+    fig2, ax2 = plt.subplots(figsize=(10, 4))
     ax2.plot(target_ang_vels, label="Ziel-Gierrate (Command)", linestyle="--", color="gray")
     ax2.plot(actual_ang_vels, label="Tatsächliche Gierrate", color="orange")
     ax2.axvline(straight_duration_steps, label="Kurve eingeleitet", linestyle=":", color="red", alpha=0.7)
@@ -165,7 +170,12 @@ def main():
     ax2.set_title(f"Gierraten-Tracking des Go2 ({args.straight_duration_s:.0f}s geradeaus, dann ang_vel={args.ang_vel:+.2f} rad/s, {radius_str})")
     ax2.legend()
     ax2.grid(True)
+    fig2.tight_layout()
+    fig2.savefig(f"ang_vel_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
+    plt.close(fig2)
 
+    # --- Plot 3: Trajektorie (Draufsicht) ---
+    fig3, ax3 = plt.subplots(figsize=(10, 8))
     traj = torch.tensor(trajectory_xy, device="cpu")
     ax3.plot(traj[:, 0], traj[:, 1], color="green")
     ax3.scatter([traj[0, 0]], [traj[0, 1]], color="black", marker="o", label="Start", zorder=5)
@@ -178,9 +188,9 @@ def main():
     ax3.legend()
     ax3.grid(True)
     ax3.set_aspect("equal", adjustable="datalim")
-
-    plt.tight_layout()
-    plt.savefig(f"speed_plot{args.ckpt}.png")
+    fig3.tight_layout()
+    fig3.savefig(f"trajectory_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
+    plt.close(fig3)
 
     final_ang_vel_error = abs(target_ang_vels[-1] - actual_ang_vels[-1])
     print(f"Finaler Gierraten-Fehler: {final_ang_vel_error:.2f} deg/s")
