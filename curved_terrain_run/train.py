@@ -9,28 +9,6 @@ gs.init(backend=gs.gpu)
 import wandb
 from reward_wrapper import RunCurve
 from rsl_rl.runners import OnPolicyRunner
-import random
-
-
-# def create_random_terrains(seed: int = 42):
-#     """Create a 5x5 terrain configuration with reproducible randomization."""
-#     random.seed(seed)
-#     terrain = [["fractal_terrain", "fractal_terrain", "fractal_terrain"]]
-
-#     all_terrains = [
-#         "wave_terrain",
-#         # "fractal_terrain",
-#         "pyramid_sloped_terrain",
-#         "pyramid_stairs_terrain",
-#         "flat_terrain"
-#     ]
-    
-#     for _ in range(2):
-#         shuffled_terrains = all_terrains.copy()
-#         random.shuffle(shuffled_terrains)
-#         terrain.append(shuffled_terrains[:3]) # take the first 3 terrains from the shuffled list
-
-#     return terrain
 
 def get_train_cfg(exp_name, max_iterations):
 
@@ -126,7 +104,6 @@ def get_cfgs():
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "base_init_pos": [0.0, 0.0, 0.42],
         "episode_length_s":40.0,
-        # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
         "action_scale": 0.25, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True, # simulate an action latency of 20 ms
         "clip_actions": 100.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
@@ -170,11 +147,12 @@ def get_cfgs():
             "lin_vel_y": -5.0,
             "action_rate": -0.005,
             "similar_to_default": -0.1,
-            "progress": 2.0, # reward if progress in the heading direction is made
-            "lateral_drift": -2.0, # penalizes sideway movement when angular velocity is between -0.05 and 0.05
+            "progress": 2.0,
+            "lateral_drift": -2.0,
         },
     }
     command_cfg = {
+        # Command space
         "num_commands": 3,
         "lin_vel_x_range": [0.5, 1.0],   # Walk speed
         "lin_vel_y_range": [-0.0, 0.0],  # Lateral movement

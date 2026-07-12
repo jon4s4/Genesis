@@ -9,28 +9,6 @@ gs.init(backend=gs.gpu)
 import wandb
 from reward_wrapper import RunFlatTerrain
 from rsl_rl.runners import OnPolicyRunner
-import random
-
-
-# def create_random_terrains(seed: int = 42):
-#     """Create a 5x5 terrain configuration with reproducible randomization."""
-#     random.seed(seed)
-#     terrain = [["fractal_terrain", "fractal_terrain", "fractal_terrain"]]
-
-#     all_terrains = [
-#         "wave_terrain",
-#         # "fractal_terrain",
-#         "pyramid_sloped_terrain",
-#         "pyramid_stairs_terrain",
-#         "flat_terrain"
-#     ]
-    
-#     for _ in range(2):
-#         shuffled_terrains = all_terrains.copy()
-#         random.shuffle(shuffled_terrains)
-#         terrain.append(shuffled_terrains[:3]) # take the first 3 terrains from the shuffled list
-
-#     return terrain
 
 def get_train_cfg(exp_name, max_iterations):
 
@@ -125,12 +103,11 @@ def get_cfgs():
         # base pose
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "base_init_pos": [0.0, 0.0, 0.42],
-        "episode_length_s": 20.0,  # gekürzt von 40.0: mehr Resets -> mehr Command-Resampling -> verhindert Stillstand-Equilibrium auf flachem Boden
-        # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
+        "episode_length_s": 20.0,
         "action_scale": 0.25, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
         "clip_actions": 100.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
-        'use_terrain': False,  # nur flat_terrain -> nutzt _add_simple_plane() (gs.morphs.Plane(), garantiert z=0)
+        'use_terrain': False,  # flat terrain only
         'termination_contact_link_names': ['base'],
         'penalized_contact_link_names': ['base', 'thigh', 'calf'],
         'feet_link_names': ['foot'],
@@ -148,19 +125,20 @@ def get_cfgs():
         },
     }
     reward_cfg = {
-        "tracking_sigma": 0.25, # Tolerance for tracking commanded velocity
-        "base_height_target": 0.28, # Target height of main body [m]
+        "tracking_sigma": 0.25,
+        "base_height_target": 0.28,
 	    "reward_scales": {
-            "tracking_lin_vel_x": 1.0, # Reward for matching commanded lin_vel
-            "tracking_ang_vel": 0.5, # erhöht von 0.2: stärkerer Druck gegen Yaw-Rate bei ang_vel_range=[0,0]
-            "lin_vel_z": -1.0,  # Penalty for vertical linear velocity
+            "tracking_lin_vel_x": 1.0,
+            "tracking_ang_vel": 0.5,
+            "lin_vel_z": -1.0,
             "base_height": -50.0,
-            "action_rate": -0.005, # Penalty for rapid joint motions
-            "similar_to_default": -0.1,  # Penalty for deviation from default joint angles
-            "heading": -10.0, # NEU: bestraft Yaw-Abweichung direkt
+            "action_rate": -0.005,
+            "similar_to_default": -0.1,
+            "heading": -10.0,
         },
     }
     command_cfg = {
+        # Command space
         "num_commands": 3,
         "lin_vel_x_range": [0.5, 1.0],
         "lin_vel_y_range": [0, 0],

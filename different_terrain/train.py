@@ -9,28 +9,6 @@ gs.init(backend=gs.gpu)
 import wandb
 from reward_wrapper import RunFractalTerrain
 from rsl_rl.runners import OnPolicyRunner
-import random
-
-
-# def create_random_terrains(seed: int = 42):
-#     """Create a 5x5 terrain configuration with reproducible randomization."""
-#     random.seed(seed)
-#     terrain = [["fractal_terrain", "fractal_terrain", "fractal_terrain"]]
-
-#     all_terrains = [
-#         "wave_terrain",
-#         # "fractal_terrain",
-#         "pyramid_sloped_terrain",
-#         "pyramid_stairs_terrain",
-#         "flat_terrain"
-#     ]
-    
-#     for _ in range(2):
-#         shuffled_terrains = all_terrains.copy()
-#         random.shuffle(shuffled_terrains)
-#         terrain.append(shuffled_terrains[:3]) # take the first 3 terrains from the shuffled list
-
-#     return terrain
 
 def get_train_cfg(exp_name, max_iterations):
 
@@ -126,19 +104,18 @@ def get_cfgs():
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "base_init_pos": [0.0, 0.0, 0.42],
         "episode_length_s":40.0,
-        # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
         "action_scale": 0.25, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
         "simulate_action_latency": True,
         "clip_actions": 100.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
         'use_terrain': True,
         'terrain_cfg': {
-            # Biete ihm beim Training exakt die Terrains an, die du im Eval testest!
+            # create different variations of the diverse terrain
             'subterrain_types': [
                 ['fractal_terrain', 'pyramid_stairs_terrain', 'flat_terrain'],
                 ['pyramid_stairs_terrain', 'fractal_terrain', 'pyramid_stairs_terrain'],
                 ['flat_terrain', 'flat_terrain', 'fractal_terrain']
             ],
-            'n_subterrains': (3, 3), # Mach das Trainings-Grid etwas größer für Variation
+            'n_subterrains': (3, 3), # 3x3 terrain grid
             'subterrain_size': (12.0, 12.0),
             'horizontal_scale': 0.25, # determines the number of scales per tile, so here 12/0.25 = 48 per tile
             'vertical_scale': 0.005,
@@ -169,13 +146,12 @@ def get_cfgs():
             "lin_vel_z": -1.0,
             "lin_vel_y": -5.0,
             "action_rate": -0.005,
-            "similar_to_default": -0.1, # TODO: Maybe remove this as for high speeds the joint angles will be very different from the default angles
-            # "termination": -10.0
+            "similar_to_default": -0.1,
             "sideway_movement": -1.0,
-            # "x_progress": 1.0, # reward for moving forward in the x direction
         },
     }
     command_cfg = {
+        # Command space
         "num_commands": 3,
         "lin_vel_x_range": [0.5, 1.5],   # Walk speed
         "lin_vel_y_range": [-0.0, 0.0],  # Lateral movement

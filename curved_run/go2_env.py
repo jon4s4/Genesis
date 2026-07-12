@@ -324,10 +324,10 @@ class Go2Env:
         self._update_robot_state()
         self._check_termination() # Setzt abgelaufene/gestürzte Umgebungen zurück
 
-        # --- NEU: Periodisches Resampling während der Episode ---
-        resample_interval_steps = int(4.0 / self.dt) # 4.0s / 0.02s = 200 Schritte
+        # periodically resample every 4 seconds
+        resample_interval_steps = int(4.0 / self.dt) # 4.0s / 0.02s = 200 steps
         
-        # Wir filtern nach Umgebungen, die laufen (Schritt > 0) und das Intervall erreicht haben
+        # resample for each environment individually
         periodic_resample_idx = (
             (self.episode_length_buf > 0) & 
             (self.episode_length_buf % resample_interval_steps == 0)
@@ -335,7 +335,6 @@ class Go2Env:
         
         if len(periodic_resample_idx) > 0:
             self._resample_commands(periodic_resample_idx)
-        # --------------------------------------------------------
 
         self._compute_rewards()
         if self.use_terrain:
@@ -426,7 +425,6 @@ class Go2Env:
 
     def _compute_rewards(self):
         """Compute rewards for all environments"""
-        # TODO: think about introducing a curriculum penalty coefficient that increases the difficulty of the task over time(starts low)
         self.rew_buf[:] = 0.0
         for name, reward_func in self.reward_functions.items():
             rew = reward_func() * self.reward_scales[name]
@@ -487,7 +485,7 @@ class Go2Env:
 
         obs = [ 
                 self.commands * self.obs_scales.get('cam_commands', 1.0),
-                self.base_lin_vel * self.obs_scales['lin_vel'],                     # 3
+                self.base_lin_vel * self.obs_scales['lin_vel'], # 3
                 self.base_ang_vel * self.obs_scales["ang_vel"],  # 3, the robot's angular velocity in its base frame(3d)
                 self.projected_gravity,  # 3, gravity vector in the robot's base frame, indicating its orientation
                 (self.dof_pos - self.default_dof_pos) * self.obs_scales["dof_pos"],  # 12, current joint angles relative to default
@@ -544,7 +542,7 @@ class Go2Env:
 
     def _reset_robot_state(self, envs_idx):
         """Reset robot state for specified environments"""
-        # 1. Gelenke zurücksetzen
+        # 1. reset joints
         self.dof_pos[envs_idx] = self.default_dof_pos
         self.dof_vel[envs_idx] = 0.0
         self.robot.set_dofs_position(
@@ -554,21 +552,21 @@ class Go2Env:
             envs_idx=envs_idx,
         )
 
-        # 2. Basis (Rumpf) zurücksetzen
+        # 2. reset base
         if self.reset_environment_at_random_terrain:
-            # Zufällige X/Y Koordinaten generieren
+            # randomly sample x and y
             rand_x = gs_rand_float(1.0, self.terrain_margin[0] - 1.0, (len(envs_idx),), self.device)
             rand_y = gs_rand_float(1.0, self.terrain_margin[1] - 1.0, (len(envs_idx),), self.device)
             
-            # --- NEU: Z-Höhe dynamisch aus dem Terrain auslesen ---
+            # read z height dynamically
             grid_x = (rand_x / self.terrain_cfg['horizontal_scale']).long()
             grid_y = (rand_y / self.terrain_cfg['horizontal_scale']).long()
             
-            # Index-Grenzen absichern (verhindert Out-of-Bounds Fehler)
+            # secure borders
             grid_x = torch.clamp(grid_x, 0, self.height_field.shape[0] - 1)
             grid_y = torch.clamp(grid_y, 0, self.height_field.shape[1] - 1)
             
-            # Höhe des Terrains an dieser Stelle + 40cm sichere Fallhöhe
+            # add 40 cm to the height
             spawn_z = self.height_field[grid_x, grid_y] + 0.40 
             
             self.base_pos[envs_idx, 0] = rand_x
@@ -580,11 +578,11 @@ class Go2Env:
             
         self.base_quat[envs_idx] = self.base_init_quat.reshape(1, -1)
         
-        # 3. WICHTIG: Den Roboter physisch in der Engine teleportieren
+        # 3.teleport the robot physically
         self.robot.set_pos(self.base_pos[envs_idx], zero_velocity=False, envs_idx=envs_idx)
         self.robot.set_quat(self.base_quat[envs_idx], zero_velocity=False, envs_idx=envs_idx)
         
-        # 4. Geschwindigkeiten nullen
+        # 4. reset velocity
         self.base_lin_vel[envs_idx] = 0
         self.base_ang_vel[envs_idx] = 0
         self.robot.zero_all_dofs_velocity(envs_idx)
@@ -617,7 +615,7 @@ class Go2Env:
 
     def increase_x_target(self, delta):
         """Increase the x target velocity by delta"""
-        mask: torch.Tensor = self.commands[:, 0] < 10.0 # mask to select environments where the x target velocity is less than 2.5
+        mask: torch.Tensor = self.commands[:, 0] < 10.0
         self.commands[mask, 0] += delta
         self.max_lin_vel_x = min(self.max_lin_vel_x + delta, 10.0)
         # self.target_increased = True # set the flag to indicate that the target has been increased
