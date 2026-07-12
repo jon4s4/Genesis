@@ -140,50 +140,60 @@ def main():
 
             if args.record and n_frames == 1000:
                 env.stop_recording(
-                    save_path_behind=f"{args.exp_name}_{args.ckpt}_behind.mp4",
-                    save_path_side=f"{args.exp_name}_{args.ckpt}_side.mp4",
+                    save_path_behind=f"{args.exp_name}_{args.ckpt}_{args.vel_x}_{args.ang_vel}_behind.mp4",
+                    save_path_side=f"{args.exp_name}_{args.ckpt}_{args.vel_x}_{args.ang_vel}_side.mp4",
                 )
                 print(f"Saved recordings for checkpoint {args.ckpt}.")
                 break
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))
-
-    ax1.plot(target_speeds, label="Ziel-Geschwindigkeit (Command)", linestyle="--", color="gray")
-    ax1.plot(actual_speeds, label="Tatsächliche Geschwindigkeit", color="blue")
-    ax1.set_xlabel("Simulationsschritte")
-    ax1.set_ylabel("Geschwindigkeit x (m/s)")
-    ax1.set_title("Beschleunigungsprofil des Go2")
+    # --- Plot 1: Beschleunigungsprofil (Geschwindigkeit) ---
+    fig1, ax1 = plt.subplots(figsize=(10, 4))
+    ax1.plot(target_speeds, label="Commanded target velocity", linestyle="--", color="gray")
+    ax1.plot(actual_speeds, label="Actual velocity", color="blue")
+    ax1.set_xlabel("Timesteps")
+    ax1.set_ylabel("Velocity x (m/s)")
+    ax1.set_title("Acceleration profil of Go2")
     ax1.legend()
     ax1.grid(True)
+    fig1.tight_layout()
+    fig1.savefig(f"speed_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
+    plt.close(fig1)
 
-    ax2.plot(target_ang_vels, label="Ziel-Gierrate (Command)", linestyle="--", color="gray")
-    ax2.plot(actual_ang_vels, label="Tatsächliche Gierrate", color="orange")
-    ax2.axvline(straight_duration_steps, label="Kurve eingeleitet", linestyle=":", color="red", alpha=0.7)
-    ax2.set_xlabel("Simulationsschritte")
-    ax2.set_ylabel("Gierrate (deg/s)")
-    radius_str = f"r ≈ {args.vel_x / args.ang_vel:.2f} m" if abs(args.ang_vel) > 1e-6 else "geradeaus"
-    ax2.set_title(f"Gierraten-Tracking des Go2 ({args.straight_duration_s:.0f}s geradeaus, dann ang_vel={args.ang_vel:+.2f} rad/s, {radius_str})")
+    # --- Plot 2: Gierraten-Tracking ---
+    fig2, ax2 = plt.subplots(figsize=(10, 4))
+    ax2.plot(target_ang_vels, label="Commanded target yaw-rate", linestyle="--", color="gray")
+    ax2.plot(actual_ang_vels, label="Actual yaw-rate", color="orange")
+    ax2.axvline(straight_duration_steps, label="Point of yaw-rate command", linestyle=":", color="red", alpha=0.7)
+    ax2.set_xlabel("Timesteps")
+    ax2.set_ylabel("yaw-rate (deg/s)")
+    radius_str = f"r ≈ {args.vel_x / args.ang_vel:.2f} m" if abs(args.ang_vel) > 1e-6 else "straight forward"
+    ax2.set_title(f"Yaw-Rate-Tracking of Go2 ({args.straight_duration_s:.0f}s forward, then ang_vel={args.ang_vel:+.2f} rad/s, {radius_str})")
     ax2.legend()
     ax2.grid(True)
+    fig2.tight_layout()
+    fig2.savefig(f"ang_vel_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
+    plt.close(fig2)
 
+    # --- Plot 3: Trajektorie (Draufsicht) ---
+    fig3, ax3 = plt.subplots(figsize=(10, 8))
     traj = torch.tensor(trajectory_xy, device="cpu")
     ax3.plot(traj[:, 0], traj[:, 1], color="green")
     ax3.scatter([traj[0, 0]], [traj[0, 1]], color="black", marker="o", label="Start", zorder=5)
     curve_marker_idx = min(straight_duration_steps, len(traj) - 1)
     ax3.scatter([traj[curve_marker_idx, 0]], [traj[curve_marker_idx, 1]],
-                color="red", marker="x", label="Kurve eingeleitet", zorder=5)
-    ax3.set_xlabel("Welt-X (m)")
-    ax3.set_ylabel("Welt-Y (m)")
-    ax3.set_title("Trajektorie (Draufsicht)")
+                color="red", marker="x", label="Curve initiated", zorder=5)
+    ax3.set_xlabel("World-X (m)")
+    ax3.set_ylabel("World-Y (m)")
+    ax3.set_title("Trajectory")
     ax3.legend()
     ax3.grid(True)
     ax3.set_aspect("equal", adjustable="datalim")
-
-    plt.tight_layout()
-    plt.savefig(f"speed_plot_{args.ckpt}.png")
+    fig3.tight_layout()
+    fig3.savefig(f"trajectory_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
+    plt.close(fig3)
 
     final_ang_vel_error = abs(target_ang_vels[-1] - actual_ang_vels[-1])
-    print(f"Finaler Gierraten-Fehler: {final_ang_vel_error:.2f} deg/s")
+    print(f"Final yaw-rate error: {final_ang_vel_error:.2f} deg/s")
 
 if __name__ == "__main__":
     main()

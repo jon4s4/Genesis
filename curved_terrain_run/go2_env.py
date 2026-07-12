@@ -580,18 +580,15 @@ class Go2Env:
             
         self.base_quat[envs_idx] = self.base_init_quat.reshape(1, -1)
         
-        # 3. WICHTIG: Den Roboter physisch in der Engine teleportieren
         self.robot.set_pos(self.base_pos[envs_idx], zero_velocity=False, envs_idx=envs_idx)
         self.robot.set_quat(self.base_quat[envs_idx], zero_velocity=False, envs_idx=envs_idx)
         
-        # 4. Geschwindigkeiten nullen
         self.base_lin_vel[envs_idx] = 0
         self.base_ang_vel[envs_idx] = 0
         self.robot.zero_all_dofs_velocity(envs_idx)
 
     def _reset_buffers(self, envs_idx):
         """Reset buffers for specified environments"""
-        # reset buffers
         self.last_actions[envs_idx] = 0.0
         self.last_dof_vel[envs_idx] = 0.0
         self.episode_length_buf[envs_idx] = 0
@@ -617,7 +614,7 @@ class Go2Env:
 
     def increase_x_target(self, delta):
         """Increase the x target velocity by delta"""
-        mask: torch.Tensor = self.commands[:, 0] < 10.0 # mask to select environments where the x target velocity is less than 2.5
+        mask: torch.Tensor = self.commands[:, 0] < 10.0 # mask to select environments where the x target velocity is less than 10
         self.commands[mask, 0] += delta
         self.max_lin_vel_x = min(self.max_lin_vel_x + delta, 10.0)
         # self.target_increased = True # set the flag to indicate that the target has been increased

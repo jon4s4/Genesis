@@ -128,17 +128,17 @@ def get_cfgs():
         "episode_length_s":40.0,
         # "resampling_time_s": 4.0, used for resampling commands and dynamics randomization
         "action_scale": 0.25, # this is smth like the amplitude knob that converts the policy's dimesionless output into real angles
-        "simulate_action_latency": True,
+        "simulate_action_latency": True, # simulate an action latency of 20 ms
         "clip_actions": 100.0, # self.actions = torch.clip(actions, -clip_actions, clip_actions), so it prevents the actions from going outside the range of -100 to 100 (which is too high)
         'use_terrain': True,
         'terrain_cfg': {
-            # Biete ihm beim Training exakt die Terrains an, die du im Eval testest!
+            # create 3 different terrain types (1x3 3 times)
             'subterrain_types': [
                 ['fractal_terrain', 'pyramid_stairs_terrain', 'flat_terrain'],
                 ['pyramid_stairs_terrain', 'fractal_terrain', 'pyramid_stairs_terrain'],
                 ['flat_terrain', 'flat_terrain', 'fractal_terrain']
             ],
-            'n_subterrains': (3, 3), # Mach das Trainings-Grid etwas größer für Variation
+            'n_subterrains': (3, 3), # Make a 3x3 subterrain grid
             'subterrain_size': (12.0, 12.0),
             'horizontal_scale': 0.25, # determines the number of scales per tile, so here 12/0.25 = 48 per tile
             'vertical_scale': 0.005,
@@ -165,14 +165,13 @@ def get_cfgs():
         "tracking_sigma": 0.30, 
         "reward_scales": {
             "tracking_lin_vel_x": 2.0,
-            "tracking_ang_vel": 1.0,
+            "tracking_ang_vel": 2.0,
             "lin_vel_z": -1.0,
             "lin_vel_y": -5.0,
             "action_rate": -0.005,
             "similar_to_default": -0.1,
-#            "sideway_movement": -1.0,
-            "progress": 2.0, # NEU: ersetzt x_progress; Fortschritt entlang der aktuellen Blickrichtung, funktioniert auch in der Kurve
-            "lateral_drift": -2.0,
+            "progress": 2.0, # reward if progress in the heading direction is made
+            "lateral_drift": -2.0, # penalizes sideway movement when angular velocity is between -0.05 and 0.05
         },
     }
     command_cfg = {
@@ -238,7 +237,7 @@ if __name__ == "__main__":
 To only see one of the GPUs: export CUDA_VISIBLE_DEVICES=1 (or 0)
 python train_walk_random_terrain.py -e go2-all-terrains-v0 -B 4096 --max_iterations 2000
 
-python train.py -e test -B 4096 --max_iterations 312
+python train.py -e test -B 32768 --max_iterations 5000
 resume : 
-python train.py -e test -B 4096 --max_iterations 1000 --resume test --ckpt 1000
+python train.py -e test -B 32768 --max_iterations 2000 --resume test --ckpt 5000
 """
