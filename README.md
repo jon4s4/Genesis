@@ -2,8 +2,6 @@
 
 This repository contains the code and evaluation resources for my Bachelor's thesis on high-velocity locomotion policies for the Unitree Go2 quadrupedal robot.
 
-o2 by training it to achieve extreme speeds and maneuverability on both flat and complex terrains. 
-
 ### Experiments Conducted
 1. **Flat-Terrain Speed Experiment**: Training the Go2 to reach a top forward velocity of 8 m/s on perfectly flat ground.
 2. **Multi-Terrain Experiment**: Navigating a structured $3 \times 3$ grid of flat, fractal, and pyramid staircase terrains at speeds up to 4.5 m/s.
