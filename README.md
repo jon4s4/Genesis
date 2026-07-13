@@ -12,7 +12,7 @@ This repository contains the code and evaluation resources for my Bachelor's the
 
 * **Python:** 3.12.3
 * **Genesis Simulator:** v0.4.7
-* **Hardware:** NVIDIA RTX-5090 GPU (recommended for computing 32,768 parallel environments)
+* **Hardware:** NVIDIA RTX-5090 GPU
 
 ## Visual Results
 Visual materials, including velocity tracking graphs, trajectories, and videos showing the robot in bird's eye view and from the side during evaluation, can be found in the respective experiment folders.
