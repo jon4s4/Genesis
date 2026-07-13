@@ -324,10 +324,10 @@ class Go2Env:
         self._update_robot_state()
         self._check_termination() # Setzt abgelaufene/gestürzte Umgebungen zurück
 
-        # --- NEU: Periodisches Resampling während der Episode ---
+        # periodically resample every 4 seconds
         resample_interval_steps = int(4.0 / self.dt) # 4.0s / 0.02s = 200 Schritte
         
-        # Wir filtern nach Umgebungen, die laufen (Schritt > 0) und das Intervall erreicht haben
+        # resample for each environment individually
         periodic_resample_idx = (
             (self.episode_length_buf > 0) & 
             (self.episode_length_buf % resample_interval_steps == 0)
@@ -544,7 +544,7 @@ class Go2Env:
 
     def _reset_robot_state(self, envs_idx):
         """Reset robot state for specified environments"""
-        # 1. Gelenke zurücksetzen
+        # 1. reset joints
         self.dof_pos[envs_idx] = self.default_dof_pos
         self.dof_vel[envs_idx] = 0.0
         self.robot.set_dofs_position(
@@ -554,21 +554,21 @@ class Go2Env:
             envs_idx=envs_idx,
         )
 
-        # 2. Basis (Rumpf) zurücksetzen
+        # 2. reset base
         if self.reset_environment_at_random_terrain:
-            # Zufällige X/Y Koordinaten generieren
+            # randomly sample x and y
             rand_x = gs_rand_float(1.0, self.terrain_margin[0] - 1.0, (len(envs_idx),), self.device)
             rand_y = gs_rand_float(1.0, self.terrain_margin[1] - 1.0, (len(envs_idx),), self.device)
             
-            # --- NEU: Z-Höhe dynamisch aus dem Terrain auslesen ---
+            # read z height dynamically
             grid_x = (rand_x / self.terrain_cfg['horizontal_scale']).long()
             grid_y = (rand_y / self.terrain_cfg['horizontal_scale']).long()
             
-            # Index-Grenzen absichern (verhindert Out-of-Bounds Fehler)
+            # secure borders
             grid_x = torch.clamp(grid_x, 0, self.height_field.shape[0] - 1)
             grid_y = torch.clamp(grid_y, 0, self.height_field.shape[1] - 1)
             
-            # Höhe des Terrains an dieser Stelle + 40cm sichere Fallhöhe
+            # add 40 cm to the height
             spawn_z = self.height_field[grid_x, grid_y] + 0.40 
             
             self.base_pos[envs_idx, 0] = rand_x

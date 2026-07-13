@@ -20,10 +20,7 @@ def main():
     # Optional: override the commanded forward speed for evaluation
     parser.add_argument("--vel_x",            type=float, default=4.0,  help="Commanded forward velocity (m/s)")
     parser.add_argument("--vel_y",            type=float, default=0.0,  help="Commanded lateral velocity (m/s)")
-    # ang_vel statt target_heading_deg: commands[:, 2] ist eine GIERRATE (rad/s),
-    # kein absoluter Zielwinkel (siehe RunCurve / command_cfg["ang_vel_range"] in train.py).
-    # Bei konstantem vel_x und konstantem ang_vel läuft der Roboter einen Kreisbogen mit
-    # Radius r = vel_x / ang_vel. Positiv = Linkskurve, negativ = Rechtskurve.
+    # add yaw-rate in rad/s (mostly [-0.8,0.8] interval)
     parser.add_argument("--ang_vel",         type=float, default=0.0,
                          help="Kommandierte Gierrate (rad/s). Positiv = Linkskurve, "
                               "negativ = Rechtskurve. r = vel_x / ang_vel.")
@@ -64,30 +61,17 @@ def main():
 
     env.reset()
 
-    # --- Ramping Setup für vel_x/vel_y/ang_vel ---
-    # commands[:, 2] ist eine Gierrate (rad/s), keine Zielrichtung. Ein "Ziel-Heading"
-    # gibt es in diesem Setup nicht mehr - der Bogen entsteht dadurch, dass ang_vel über
-    # die Zeit konstant gehalten wird, während der Roboter sich bewegt. Wir rampen
-    # ang_vel trotzdem sanft ein wie vel_x/vel_y, damit der Übergang von Geradeauslauf zu
-    # Kurve nicht als Sprung in der Beobachtung erscheint (das WICHTIGSTE: das Resampling
-    # in go2_env.py läuft alle 4s UNABHÄNGIG vom eval-Flag weiter und würde unser
-    # Kommando sonst überschreiben - wir müssen es daher in jedem Step neu erzwingen).
+    # Ramping up vel_x starting at 0.0
     device = env.commands.device
     current_cmd = torch.zeros(3, device=device)
     target_cmd = torch.tensor([args.vel_x, args.vel_y, 0.0], device=device)  # ang_vel-Ziel kommt erst nach straight_duration_s
 
-    # Maximale Beschleunigung pro Sekunde für [x_accel, y_accel, ang_accel]
+    # Max acceleration per second [x_accel, y_accel, ang_accel]
     accel_limits = torch.tensor([1.0, 0.0, 0.5], device=device)
     max_step_change = accel_limits * env.dt
 
     straight_duration_steps = int(args.straight_duration_s / env.dt)
     curve_command_active = False
-    # --------------------------
-
-    # WICHTIG: Das periodische Resampling in go2_env.py (alle 4s, in step()) ist NICHT
-    # an das eval-Flag gekoppelt und bleibt aktiv. Wir setzen unser Kommando deshalb nach
-    # jedem env.step() erneut, statt uns (wie ein früherer Eval-Stand das annahm) darauf
-    # zu verlassen, dass es während eval automatisch deaktiviert wird.
 
     obs = env.get_observations()
     n_frames = 0
@@ -100,27 +84,20 @@ def main():
     actual_ang_vels = []
     target_ang_vels = []
     current_yaws_deg = []
-    trajectory_xy = []  # (x, y) Weltposition pro Step, für die Bogen-Visualisierung
+    trajectory_xy = []  # (x, y) World position for trajectory
 
     with torch.no_grad():
         while True:
-            # --- Verzögerte Kurveneinleitung ---
-            # Die ersten straight_duration_steps Schritte läuft der Roboter mit ang_vel=0
-            # (Geradeauslauf), damit zunächst eine stabile Gangart etabliert wird. Danach
-            # wird das Kurven-Kommando (args.ang_vel) als neues Rampingziel gesetzt.
+           
             if not curve_command_active and n_frames >= straight_duration_steps:
                 target_cmd[2] = args.ang_vel
                 curve_command_active = True
-            # --------------------------
 
-            # --- Ramping Logik (vel_x, vel_y, ang_vel) ---
+            # Ramping logic
             diff = target_cmd - current_cmd
             step_change = torch.clamp(diff, -max_step_change, max_step_change)
             current_cmd += step_change
             env.commands[:, :3] = current_cmd
-            # Erzwingt das Kommando gegen das periodische Resampling in go2_env.py,
-            # das unabhängig vom eval-Flag weiterläuft (siehe Kommentar oben).
-            # --------------------------
 
             actions = policy(obs)
             obs, _, rews, dones, infos = env.step(actions)
@@ -146,7 +123,7 @@ def main():
                 print(f"Saved recordings for checkpoint {args.ckpt}.")
                 break
 
-    # --- Plot 1: Beschleunigungsprofil (Geschwindigkeit) ---
+    # --- Plot 1: Acceleration profile (vel_x) ---
     fig1, ax1 = plt.subplots(figsize=(10, 4))
     ax1.plot(target_speeds, label="Commanded target velocity", linestyle="--", color="gray")
     ax1.plot(actual_speeds, label="Actual velocity", color="blue")
@@ -159,7 +136,7 @@ def main():
     fig1.savefig(f"speed_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
     plt.close(fig1)
 
-    # --- Plot 2: Gierraten-Tracking ---
+    # Plot 2: yaw-rate tracking
     fig2, ax2 = plt.subplots(figsize=(10, 4))
     ax2.plot(target_ang_vels, label="Commanded target yaw-rate", linestyle="--", color="gray")
     ax2.plot(actual_ang_vels, label="Actual yaw-rate", color="orange")
@@ -174,7 +151,7 @@ def main():
     fig2.savefig(f"ang_vel_plot_{args.ckpt}_{args.vel_x}_{args.ang_vel}.png")
     plt.close(fig2)
 
-    # --- Plot 3: Trajektorie (Draufsicht) ---
+    # Plot 3: Trajectory
     fig3, ax3 = plt.subplots(figsize=(10, 8))
     traj = torch.tensor(trajectory_xy, device="cpu")
     ax3.plot(traj[:, 0], traj[:, 1], color="green")
@@ -203,9 +180,9 @@ if __name__ == "__main__":
 Run evaluation:
 python eval.py -e test --ckpt 3000 --vel_x 4.0
 
-Geradeaus, dann sanfte Linkskurve nach 5s (Default-Dauer):
+Straight forward, then slight curve to the left after 5s (Default-Dauer):
 python eval.py -e test --ckpt 3000 --vel_x 5.0 --ang_vel 0.6
 
-Geradeaus, dann engere Rechtskurve, Kurve schon nach 3s einleiten:
+Straight forward, then sharp right after 3s einleiten:
 python eval.py -e test --ckpt 3000 --vel_x 4.0 --ang_vel -0.8 --straight_duration_s 3.0
 """
